@@ -59,7 +59,17 @@ type HydrationAction = { type: "hydrated" };
 type BusinessSettingsPatch = Partial<
   Pick<
     DemoWorkspaceState["organization"],
-    "hours" | "boardingCapacity" | "cancellationPolicy" | "depositPolicy" | "vaccineRequirements" | "aiGuardrails"
+    | "websiteUrl"
+    | "contactEmail"
+    | "contactPhone"
+    | "address"
+    | "socialLinks"
+    | "hours"
+    | "boardingCapacity"
+    | "cancellationPolicy"
+    | "depositPolicy"
+    | "vaccineRequirements"
+    | "aiGuardrails"
   >
 >;
 

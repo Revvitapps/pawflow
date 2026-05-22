@@ -40,6 +40,17 @@ export default function PortalPage() {
             </div>
           </div>
           <p className="mt-3 max-w-3xl text-lg leading-8 text-zinc-600">{brand.portalHeadline}</p>
+          <div className="mt-5 flex flex-wrap gap-3 text-sm text-zinc-600">
+            {workspace.organization.contactPhone ? (
+              <div className="rounded-full bg-white px-4 py-2 shadow-sm">{workspace.organization.contactPhone}</div>
+            ) : null}
+            {workspace.organization.contactEmail ? (
+              <div className="rounded-full bg-white px-4 py-2 shadow-sm">{workspace.organization.contactEmail}</div>
+            ) : null}
+            {workspace.organization.websiteUrl ? (
+              <div className="rounded-full bg-white px-4 py-2 shadow-sm">{workspace.organization.websiteUrl}</div>
+            ) : null}
+          </div>
         </header>
 
         <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
@@ -107,9 +118,23 @@ export default function PortalPage() {
 
           <Card className="rounded-[32px] border-white/80 bg-white/90">
             <CardHeader>
-              <CardTitle className="font-heading text-2xl">Portal tools</CardTitle>
+              <CardTitle className="font-heading text-2xl">Visit details and contact</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {workspace.organization.address ? (
+                <div className="rounded-[24px] bg-zinc-50 p-4 text-sm text-zinc-700">
+                  <p className="font-semibold text-zinc-900">Address</p>
+                  <p className="mt-1">{workspace.organization.address}</p>
+                </div>
+              ) : null}
+              <div className="rounded-[24px] bg-zinc-50 p-4 text-sm text-zinc-700">
+                <p className="font-semibold text-zinc-900">Hours</p>
+                <div className="mt-2 space-y-1">
+                  {workspace.organization.hours.map((line) => (
+                    <p key={line}>{line}</p>
+                  ))}
+                </div>
+              </div>
               <Input placeholder="Upload vaccine record placeholder" />
               <Textarea placeholder="Message the business" id="portal-message" />
               <div className="flex flex-wrap gap-3">

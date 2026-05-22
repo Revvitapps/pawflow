@@ -16,6 +16,10 @@ export default function BusinessSettingsPage() {
           <CardTitle className="font-heading text-2xl">Business settings</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-2">
+          <Input value={business.websiteUrl || ""} onChange={(e) => updateBusinessSettings({ websiteUrl: e.target.value })} placeholder="Website URL" />
+          <Input value={business.contactEmail || ""} onChange={(e) => updateBusinessSettings({ contactEmail: e.target.value })} placeholder="Contact email" />
+          <Input value={business.contactPhone || ""} onChange={(e) => updateBusinessSettings({ contactPhone: e.target.value })} placeholder="Contact phone" />
+          <Input value={business.address || ""} onChange={(e) => updateBusinessSettings({ address: e.target.value })} placeholder="Business address" />
           <Textarea value={business.hours.join("\n")} onChange={(e) => updateBusinessSettings({ hours: e.target.value.split("\n") })} />
           <Input type="number" value={String(business.boardingCapacity)} onChange={(e) => updateBusinessSettings({ boardingCapacity: Number(e.target.value) })} />
           <Textarea value={business.cancellationPolicy} onChange={(e) => updateBusinessSettings({ cancellationPolicy: e.target.value })} />

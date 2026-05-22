@@ -18,7 +18,7 @@ const starterServices = [
   { name: "Full Groom", category: "grooming", durationMinutes: 120, price: 95, depositAmount: 25 },
   { name: "Bath + Tidy", category: "grooming", durationMinutes: 75, price: 65, depositAmount: 0 },
   { name: "Overnight Boarding", category: "boarding", durationMinutes: 1440, price: 70, depositAmount: 50 },
-] as const;
+];
 
 export default function SetupPage() {
   const router = useRouter();
@@ -32,6 +32,9 @@ export default function SetupPage() {
     businessSlug: "",
     logoUrl: "",
     portalHeadline: "",
+    contactEmail: "",
+    contactPhone: "",
+    address: "",
     primaryColor: "#79c6bf",
     secondaryColor: "#fff5ef",
     accentColor: "#f2b7c6",
@@ -75,11 +78,19 @@ export default function SetupPage() {
 
       setForm((current) => ({
         ...current,
+        websiteUrl: data.normalizedUrl || current.websiteUrl,
         businessName: data.businessName || current.businessName,
         businessSlug: data.businessSlug || current.businessSlug,
-        logoUrl: data.logoUrl || current.logoUrl,
+        logoUrl: data.logoUrl || data.logos?.[0] || current.logoUrl,
         portalHeadline: data.description || current.portalHeadline,
+        contactEmail: data.emails?.[0] || current.contactEmail,
+        contactPhone: data.phones?.[0] || current.contactPhone,
+        address: data.addresses?.[0] || current.address,
         primaryColor: data.primaryColor || current.primaryColor,
+        hours: data.hours?.length ? data.hours.join("\n") : current.hours,
+        service1Name: data.services?.[0] || current.service1Name,
+        service2Name: data.services?.[1] || current.service2Name,
+        service3Name: data.services?.[2] || current.service3Name,
       }));
     } catch (error) {
       setWebsiteError(error instanceof Error ? error.message : "Could not pull website details.");
@@ -157,6 +168,19 @@ export default function SetupPage() {
                     onChange={(e) => updateField("businessSlug", e.target.value.toLowerCase().replace(/\s+/g, "-"))}
                   />
                   <Input placeholder="Logo URL placeholder" value={form.logoUrl} onChange={(e) => updateField("logoUrl", e.target.value)} />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Input
+                      placeholder="Contact email"
+                      value={form.contactEmail}
+                      onChange={(e) => updateField("contactEmail", e.target.value)}
+                    />
+                    <Input
+                      placeholder="Contact phone"
+                      value={form.contactPhone}
+                      onChange={(e) => updateField("contactPhone", e.target.value)}
+                    />
+                  </div>
+                  <Input placeholder="Business address" value={form.address} onChange={(e) => updateField("address", e.target.value)} />
                   <Textarea
                     placeholder="Portal headline"
                     value={form.portalHeadline}
@@ -250,6 +274,10 @@ export default function SetupPage() {
                         businessSlug: form.businessSlug || "my-grooming-business",
                         logoUrl: form.logoUrl,
                         portalHeadline: form.portalHeadline,
+                        websiteUrl: form.websiteUrl,
+                        contactEmail: form.contactEmail,
+                        contactPhone: form.contactPhone,
+                        address: form.address,
                         primaryColor: form.primaryColor,
                         secondaryColor: form.secondaryColor,
                         accentColor: form.accentColor,
@@ -287,6 +315,7 @@ export default function SetupPage() {
                           { name: form.groomerName || "Lead Groomer", roleLabel: "Lead Groomer", specialty: "Styling and care" },
                           { name: form.frontDeskName || "Front Desk", roleLabel: "Front Desk", specialty: "Scheduling and customer care" },
                         ],
+                        socialLinks: [],
                       });
                       router.push("/dashboard");
                     }}

@@ -45,6 +45,11 @@ export type AiTask =
 
 export type FeedbackSentiment = "like" | "dislike" | "idea";
 
+export interface SocialLink {
+  label: string;
+  url: string;
+}
+
 export interface BrandSettings {
   businessName: string;
   businessSlug: string;
@@ -284,6 +289,11 @@ export interface Organization {
   name: string;
   workspaceMode: "demo" | "custom";
   brand: BrandSettings;
+  websiteUrl?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+  socialLinks?: SocialLink[];
   hours: string[];
   cancellationPolicy: string;
   depositPolicy: string;
@@ -343,6 +353,11 @@ export interface SetupWorkspacePayload {
   businessSlug: string;
   logoUrl?: string;
   portalHeadline?: string;
+  websiteUrl?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+  socialLinks?: SocialLink[];
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
@@ -363,6 +378,16 @@ export interface WebsiteBrandIntake {
   logoUrl?: string;
   description?: string;
   primaryColor?: string;
+  logos?: string[];
+  services?: string[];
+  hours?: string[];
+  emails?: string[];
+  phones?: string[];
+  addresses?: string[];
+  socialLinks?: SocialLink[];
+  ctas?: string[];
+  trustSignals?: string[];
+  rawTextSample?: string;
 }
 
 export interface FeedbackEntry {
