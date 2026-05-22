@@ -102,10 +102,10 @@ export default function SetupPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,#e8f7f4_0%,#fff7ef_45%,#ffffff_100%)] px-4 py-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.32em] text-zinc-400">Start Here</p>
-            <h1 className="mt-2 font-heading text-5xl font-semibold text-zinc-900">Set up your own grooming business</h1>
+            <h1 className="mt-2 font-heading text-4xl font-semibold text-zinc-900 sm:text-5xl">Set up your own grooming business</h1>
             <p className="mt-3 max-w-3xl text-lg text-zinc-600">
               Build your branded workspace, add services and staff, and get your customer-facing portal ready to share.
             </p>
@@ -122,7 +122,7 @@ export default function SetupPage() {
               <CardTitle className="font-heading text-2xl">Onboarding steps</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid gap-2 sm:grid-cols-5">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                 {stepLabels.map((label, index) => (
                   <div
                     key={label}

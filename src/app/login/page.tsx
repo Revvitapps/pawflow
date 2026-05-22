@@ -36,7 +36,7 @@ export default function LoginPage() {
             <Image src="/paw-flow-logo.png" alt="PawFlow logo" fill className="object-contain" sizes="80px" />
           </div>
           <p className="text-sm font-semibold uppercase tracking-[0.32em] text-zinc-400">Workspace Access</p>
-          <h1 className="mt-3 font-heading text-5xl font-semibold text-zinc-900">{workspace.organization.brand.businessName}</h1>
+          <h1 className="mt-3 font-heading text-4xl font-semibold text-zinc-900 sm:text-5xl">{workspace.organization.brand.businessName}</h1>
           <p className="mt-4 text-lg text-zinc-600">Pick a role and open the workspace.</p>
         </div>
         <Card className="mb-6 rounded-[32px] border-[#dff3f0] bg-[linear-gradient(135deg,#ffffff_0%,#eef7f5_100%)] shadow-[0_20px_60px_rgba(61,58,57,0.08)]">

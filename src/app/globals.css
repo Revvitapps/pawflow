@@ -88,13 +88,13 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
     background-image:
       radial-gradient(circle at top left, rgba(121, 198, 191, 0.12), transparent 26%),
       radial-gradient(circle at top right, rgba(242, 183, 198, 0.14), transparent 22%);
   }
   html {
-    @apply font-sans;
+    @apply font-sans overflow-x-hidden;
   }
   h1,
   h2,

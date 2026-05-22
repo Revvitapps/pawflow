@@ -36,17 +36,17 @@ export default function HomePage() {
       <section className="relative">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,#d7f2ee_0%,transparent_35%),radial-gradient(circle_at_top_right,#ffdbe6_0%,transparent_28%),linear-gradient(180deg,#fff8f1_0%,#ffffff_100%)]" />
         <div className="relative mx-auto max-w-7xl px-4 py-6 md:px-8">
-          <header className="flex items-center justify-between rounded-full border border-white/80 bg-white/80 px-5 py-3 shadow-[0_15px_60px_rgba(61,58,57,0.06)] backdrop-blur">
-            <div className="flex items-center gap-3">
+          <header className="flex flex-col gap-4 rounded-[28px] border border-white/80 bg-white/80 px-5 py-4 shadow-[0_15px_60px_rgba(61,58,57,0.06)] backdrop-blur md:flex-row md:items-center md:justify-between md:rounded-full md:py-3">
+            <div className="flex min-w-0 items-center gap-3">
               <div className="relative h-11 w-11 overflow-hidden rounded-2xl bg-white shadow-sm">
                 <Image src="/paw-flow-logo.png" alt="PawFlow logo" fill className="object-contain" sizes="44px" />
               </div>
-              <div>
-                <p className="font-heading text-xl font-semibold">PawFlow</p>
-                <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">Pet-Care Operating System</p>
+              <div className="min-w-0">
+                <p className="font-heading text-lg font-semibold sm:text-xl">PawFlow</p>
+                <p className="text-[10px] uppercase tracking-[0.24em] text-zinc-400 sm:text-xs sm:tracking-[0.3em]">Pet-Care Operating System</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Link href="/login">
                 <Button variant="outline" className="rounded-full">Start Here</Button>
               </Link>
@@ -64,7 +64,7 @@ export default function HomePage() {
               <div className="inline-flex rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm">
                 Modern pet boutique meets practical operations software
               </div>
-              <h1 className="mt-6 max-w-3xl font-heading text-5xl font-semibold leading-tight md:text-7xl">
+              <h1 className="mt-6 max-w-3xl font-heading text-4xl font-semibold leading-tight sm:text-5xl md:text-7xl">
                 PawFlow helps grooming and boarding businesses stop running on notebooks, missed calls, texts, sticky notes, and memory.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-600">
@@ -137,7 +137,7 @@ export default function HomePage() {
       <section className="mx-auto max-w-7xl px-4 py-16 md:px-8">
         <div className="mb-8 max-w-3xl">
           <p className="text-sm font-semibold uppercase tracking-[0.32em] text-zinc-400">The Problem</p>
-          <h2 className="mt-3 font-heading text-4xl font-semibold">Pet-care teams lose time in the cracks between calls, clipboards, and memory.</h2>
+          <h2 className="mt-3 font-heading text-3xl font-semibold sm:text-4xl">Pet-care teams lose time in the cracks between calls, clipboards, and memory.</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {painPoints.map((item) => (
@@ -186,7 +186,7 @@ export default function HomePage() {
           <div className="grid gap-8 lg:grid-cols-[1fr_0.8fr]">
             <div>
               <p className="text-sm uppercase tracking-[0.32em] text-white/50">Pricing Preview</p>
-              <h2 className="mt-3 font-heading text-4xl font-semibold">Start with the essentials. Grow into your branded ops stack.</h2>
+              <h2 className="mt-3 font-heading text-3xl font-semibold sm:text-4xl">Start with the essentials. Grow into your branded ops stack.</h2>
               <p className="mt-4 max-w-2xl text-base leading-8 text-white/70">
                 Built for Vercel deployment, AI-ready from the start, and structured for real Supabase + Twilio + payments when you&apos;re ready.
               </p>

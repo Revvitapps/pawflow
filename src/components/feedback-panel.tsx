@@ -100,8 +100,8 @@ export function FeedbackPanel() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <button className="fixed top-1/2 right-0 z-50 -translate-y-1/2 rounded-l-[22px] bg-zinc-900 px-3 py-5 text-sm font-semibold text-white shadow-[0_20px_60px_rgba(61,58,57,0.22)] transition hover:bg-zinc-800">
-          <span className="[writing-mode:vertical-rl]">Prototype Notes</span>
+        <button className="fixed right-3 bottom-24 z-50 rounded-full bg-zinc-900 px-4 py-3 text-sm font-semibold text-white shadow-[0_20px_60px_rgba(61,58,57,0.22)] transition hover:bg-zinc-800 lg:top-1/2 lg:right-0 lg:bottom-auto lg:-translate-y-1/2 lg:rounded-l-[22px] lg:rounded-r-none lg:px-3 lg:py-5">
+          <span className="lg:[writing-mode:vertical-rl]">Prototype Notes</span>
         </button>
       </SheetTrigger>
       <SheetContent className="w-full overflow-y-auto border-l-white/70 bg-[#fffaf7] sm:max-w-xl">

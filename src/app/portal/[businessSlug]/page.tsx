@@ -36,19 +36,19 @@ export default function PortalPage() {
             ) : null}
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-zinc-400">{params.businessSlug}</p>
-              <h1 className="mt-2 font-heading text-5xl font-semibold text-zinc-900">{brand.businessName}</h1>
+              <h1 className="mt-2 font-heading text-4xl font-semibold text-zinc-900 sm:text-5xl">{brand.businessName}</h1>
             </div>
           </div>
           <p className="mt-3 max-w-3xl text-lg leading-8 text-zinc-600">{brand.portalHeadline}</p>
           <div className="mt-5 flex flex-wrap gap-3 text-sm text-zinc-600">
             {workspace.organization.contactPhone ? (
-              <div className="rounded-full bg-white px-4 py-2 shadow-sm">{workspace.organization.contactPhone}</div>
+              <div className="max-w-full rounded-full bg-white px-4 py-2 shadow-sm break-all">{workspace.organization.contactPhone}</div>
             ) : null}
             {workspace.organization.contactEmail ? (
-              <div className="rounded-full bg-white px-4 py-2 shadow-sm">{workspace.organization.contactEmail}</div>
+              <div className="max-w-full rounded-full bg-white px-4 py-2 shadow-sm break-all">{workspace.organization.contactEmail}</div>
             ) : null}
             {workspace.organization.websiteUrl ? (
-              <div className="rounded-full bg-white px-4 py-2 shadow-sm">{workspace.organization.websiteUrl}</div>
+              <div className="max-w-full rounded-full bg-white px-4 py-2 shadow-sm break-all">{workspace.organization.websiteUrl}</div>
             ) : null}
           </div>
         </header>

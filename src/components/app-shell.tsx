@@ -41,7 +41,7 @@ export function AppShell({
         background: `radial-gradient(circle at top left, ${colors.secondaryColor} 0%, white 38%, #fffaf7 100%)`,
       }}
     >
-      <div className="mx-auto flex min-h-screen max-w-[1600px]">
+      <div className="mx-auto flex min-h-screen max-w-[1600px] overflow-x-clip">
         <Sidebar
           businessName={workspace.organization.brand.businessName}
           logoUrl={workspaceLogoUrl}
@@ -53,15 +53,15 @@ export function AppShell({
         />
         <div className="flex min-h-screen flex-1 flex-col pb-28 lg:pb-0">
           <header className="sticky top-0 z-30 border-b border-white/70 bg-white/75 px-4 py-4 backdrop-blur-xl md:px-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <LogoBadge src="/paw-flow-logo.png" alt="PawFlow logo" size={54} rounded="rounded-[18px]" className="shrink-0" />
-                <div>
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+              <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+                <LogoBadge src="/paw-flow-logo.png" alt="PawFlow logo" size={48} rounded="rounded-[18px]" className="shrink-0" />
+                <div className="min-w-0">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-2 py-1">
                       <span className="text-xs font-semibold uppercase tracking-[0.3em] text-zinc-400">Workspace</span>
                     </div>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-2 py-1">
+                    <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-zinc-200 bg-white px-2 py-1">
                       {workspaceLogoUrl ? (
                         <LogoBadge
                           src={workspaceLogoUrl}
@@ -71,28 +71,28 @@ export function AppShell({
                           className="shadow-none"
                         />
                       ) : null}
-                      <span className="text-xs font-medium text-zinc-600">{workspace.organization.brand.businessName}</span>
+                      <span className="truncate text-xs font-medium text-zinc-600">{workspace.organization.brand.businessName}</span>
                     </div>
                   </div>
-                  <h1 className="font-heading text-3xl font-semibold text-zinc-900">{title}</h1>
+                  <h1 className="font-heading text-2xl font-semibold text-zinc-900 sm:text-3xl">{title}</h1>
                   <p className="mt-1 max-w-2xl text-sm text-zinc-600">{description}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 xl:justify-end">
                 <Link href="/">
-                  <Button variant="outline" className="rounded-full">
+                  <Button variant="outline" className="rounded-full px-3 text-xs sm:text-sm">
                     <Home className="size-4" />
                     Home Screen
                   </Button>
                 </Link>
                 <Link href="/setup">
-                  <Button className="rounded-full bg-[#79c6bf] text-zinc-900 hover:bg-[#68b7af]">
+                  <Button className="rounded-full bg-[#79c6bf] px-3 text-xs text-zinc-900 hover:bg-[#68b7af] sm:text-sm">
                     <Sparkles className="size-4" />
                     Start Here
                   </Button>
                 </Link>
                 <Link href={`/portal/${workspace.organization.brand.businessSlug}`}>
-                  <Button variant="outline" className="rounded-full">
+                  <Button variant="outline" className="rounded-full px-3 text-xs sm:text-sm">
                     Customer Portal
                     <ArrowRight className="size-4" />
                   </Button>
