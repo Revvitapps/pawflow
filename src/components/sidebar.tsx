@@ -6,6 +6,7 @@ import {
   Bot,
   CalendarDays,
   CreditCard,
+  House,
   Home,
   Inbox,
   PawPrint,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { LogoBadge } from "@/components/logo-badge";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -36,9 +38,11 @@ const navItems = [
 
 export function Sidebar({
   businessName,
+  logoUrl,
   colors,
 }: {
   businessName: string;
+  logoUrl?: string;
   colors: { primary: string; accent: string; neutral: string };
 }) {
   const pathname = usePathname();
@@ -51,21 +55,52 @@ export function Sidebar({
           background: `linear-gradient(180deg, ${colors.primary}22 0%, #ffffff 100%)`,
         }}
       >
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-2 shadow-sm">
+          <LogoBadge src="/paw-flow-logo.png" alt="PawFlow logo" size={26} rounded="rounded-full" className="shadow-none" />
+          <span className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">PawFlow</span>
+        </div>
         <div className="mb-4 flex items-center gap-3">
-          <div
-            className="flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-black text-white shadow-lg"
-            style={{ backgroundColor: colors.primary }}
-          >
-            PF
-          </div>
+          {logoUrl ? (
+            <LogoBadge
+              src={logoUrl}
+              alt={`${businessName} logo`}
+              size={48}
+              rounded="rounded-2xl"
+              className="shadow-lg"
+            />
+          ) : (
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-black text-white shadow-lg"
+              style={{ backgroundColor: colors.primary }}
+            >
+              PF
+            </div>
+          )}
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-zinc-500">PawFlow</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-zinc-500">Workspace Brand</p>
             <h2 className="font-heading text-lg font-semibold text-zinc-900">{businessName}</h2>
           </div>
         </div>
         <p className="rounded-2xl bg-white/80 px-3 py-2 text-sm text-zinc-600">
           Stop running on sticky notes, missed calls, and memory.
         </p>
+        <div className="mt-4 grid gap-2">
+          <Link
+            href="/setup"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-zinc-900 transition hover:opacity-90"
+            style={{ backgroundColor: colors.primary }}
+          >
+            <Sparkles className="size-4" />
+            Start Here
+          </Link>
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
+          >
+            <House className="size-4" />
+            Home Screen
+          </Link>
+        </div>
       </div>
       <nav className="mt-5 grid gap-2">
         {navItems.map((item) => {

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   Bot,
@@ -37,7 +38,9 @@ export default function HomePage() {
         <div className="relative mx-auto max-w-7xl px-4 py-6 md:px-8">
           <header className="flex items-center justify-between rounded-full border border-white/80 bg-white/80 px-5 py-3 shadow-[0_15px_60px_rgba(61,58,57,0.06)] backdrop-blur">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#79c6bf] text-xl text-white">🐾</div>
+              <div className="relative h-11 w-11 overflow-hidden rounded-2xl bg-white shadow-sm">
+                <Image src="/paw-flow-logo.png" alt="PawFlow logo" fill className="object-contain" sizes="44px" />
+              </div>
               <div>
                 <p className="font-heading text-xl font-semibold">PawFlow</p>
                 <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">Pet-Care Operating System</p>
@@ -45,7 +48,7 @@ export default function HomePage() {
             </div>
             <div className="flex items-center gap-2">
               <Link href="/login">
-                <Button variant="outline" className="rounded-full">Demo Login</Button>
+                <Button variant="outline" className="rounded-full">Start Here</Button>
               </Link>
               <Link href="/dashboard">
                 <Button className="rounded-full bg-zinc-900 text-white hover:bg-zinc-800">

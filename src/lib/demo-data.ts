@@ -14,6 +14,7 @@ import type {
   Pet,
   Reminder,
   Service,
+  SetupWorkspacePayload,
   StaffMember,
 } from "@/lib/types";
 
@@ -24,9 +25,11 @@ const iso = (value: Date) => value.toISOString();
 const organization: Organization = {
   id: "org_zion",
   name: "Zion & Co. Grooming Lodge",
+  workspaceMode: "demo",
   brand: {
     businessName: "Zion & Co. Grooming Lodge",
     businessSlug: "zion-and-co-grooming-lodge",
+    logoUrl: "/Zion -Groom-Lodge.png",
     primaryColor: "#79c6bf",
     secondaryColor: "#fff5ef",
     accentColor: "#f2b7c6",
@@ -679,5 +682,75 @@ export function createDemoWorkspace(): DemoWorkspaceState {
     aiInteractions,
     automations,
     missedCalls,
+  };
+}
+
+export function createStarterWorkspace(payload: SetupWorkspacePayload): DemoWorkspaceState {
+  const base = createDemoWorkspace();
+  const organizationId = base.organization.id;
+
+  return {
+    ...base,
+    organization: {
+      ...base.organization,
+      name: payload.businessName,
+      workspaceMode: "custom",
+      brand: {
+        ...base.organization.brand,
+        businessName: payload.businessName,
+        businessSlug: payload.businessSlug,
+        logoUrl: payload.logoUrl,
+        primaryColor: payload.primaryColor,
+        secondaryColor: payload.secondaryColor,
+        accentColor: payload.accentColor,
+        portalHeadline:
+          payload.portalHeadline ||
+          `Welcome to ${payload.businessName}. Book care, message the front desk, and keep your pet details in one place.`,
+        notificationSignature: `Warmly, the ${payload.businessName} team`,
+      },
+      hours: payload.hours,
+      boardingCapacity: payload.boardingCapacity,
+      cancellationPolicy: payload.cancellationPolicy,
+      depositPolicy: payload.depositPolicy,
+      vaccineRequirements: payload.vaccineRequirements,
+      aiGuardrails: payload.aiGuardrails,
+    },
+    services: payload.services.map((service, index) => ({
+      id: `svc_custom_${index + 1}`,
+      organizationId,
+      name: service.name,
+      category: service.category,
+      durationMinutes: service.durationMinutes,
+      price: service.price,
+      depositRequired: service.depositAmount > 0,
+      depositAmount: service.depositAmount,
+      description: `${service.name} for ${payload.businessName}.`,
+    })),
+    staff: payload.staff.map((staffMember, index) => ({
+      id: `staff_custom_${index + 1}`,
+      organizationId,
+      name: staffMember.name,
+      roleLabel: staffMember.roleLabel,
+      specialty: staffMember.specialty,
+      avatar: staffMember.name
+        .split(" ")
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase(),
+      phone: "",
+      color: [payload.primaryColor, payload.accentColor, "#ffd58a"][index % 3],
+      isAvailableToday: true,
+    })),
+    customers: [],
+    pets: [],
+    appointments: [],
+    boardingStays: [],
+    payments: [],
+    messages: [],
+    reminders: [],
+    intakeRequests: [],
+    aiInteractions: [],
+    missedCalls: [],
   };
 }

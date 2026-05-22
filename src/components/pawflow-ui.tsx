@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { format, formatDistanceToNowStrict, parseISO } from "date-fns";
 import {
   AlertTriangle,
@@ -299,12 +300,14 @@ export function AutomationToggleCard({
 
 export function BrandPreview({
   businessName,
+  logoUrl,
   primaryColor,
   secondaryColor,
   accentColor,
   poweredByPawFlow,
 }: {
   businessName: string;
+  logoUrl?: string;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
@@ -315,8 +318,14 @@ export function BrandPreview({
       <div className="p-6" style={{ background: `linear-gradient(135deg, ${secondaryColor} 0%, white 60%, ${accentColor}55 100%)` }}>
         <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-lg">
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl text-xl text-white" style={{ backgroundColor: primaryColor }}>
-              🐾
+            <div className="relative h-12 w-12 overflow-hidden rounded-2xl bg-white shadow-sm">
+              {logoUrl ? (
+                <Image src={logoUrl} alt={`${businessName} logo`} fill className="object-contain" sizes="48px" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-xl text-white" style={{ backgroundColor: primaryColor }}>
+                  🐾
+                </div>
+              )}
             </div>
             <div>
               <h3 className="font-heading text-lg font-semibold text-zinc-900">{businessName}</h3>

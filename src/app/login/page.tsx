@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building2, PawPrint, UserCog } from "lucide-react";
+import { ArrowLeft, ArrowRight, Building2, PawPrint, Sparkles, UserCog } from "lucide-react";
 
 import { usePawFlow } from "@/components/pawflow-provider";
 import { Button } from "@/components/ui/button";
@@ -20,14 +22,45 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,#e8f7f4_0%,#fff7ef_40%,#ffffff_100%)] px-4 py-10">
       <div className="mx-auto max-w-4xl">
+        <div className="mb-6 flex justify-center">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/90 px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-white"
+          >
+            <ArrowLeft className="size-4" />
+            Back to Home Screen
+          </Link>
+        </div>
         <div className="mb-10 text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[28px] bg-[#79c6bf] text-3xl text-white">
-            🐾
+          <div className="relative mx-auto mb-5 h-20 w-20 overflow-hidden rounded-[28px] bg-white shadow-[0_20px_60px_rgba(61,58,57,0.08)]">
+            <Image src="/paw-flow-logo.png" alt="PawFlow logo" fill className="object-contain" sizes="80px" />
           </div>
           <p className="text-sm font-semibold uppercase tracking-[0.32em] text-zinc-400">Demo Workspace</p>
           <h1 className="mt-3 font-heading text-5xl font-semibold text-zinc-900">{workspace.organization.brand.businessName}</h1>
           <p className="mt-4 text-lg text-zinc-600">Pick a role and enter a fully interactive PawFlow prototype.</p>
         </div>
+        <Card className="mb-6 rounded-[32px] border-[#dff3f0] bg-[linear-gradient(135deg,#ffffff_0%,#eef7f5_100%)] shadow-[0_20px_60px_rgba(61,58,57,0.08)]">
+          <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-zinc-400">New Client Setup</p>
+              <h2 className="mt-2 font-heading text-3xl font-semibold text-zinc-900">Start Here</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-600">
+                Walk her through branding her own grooming business, entering services and staff, and launching her own workspace while leaving Zion &amp; Co. untouched as the demo sample.
+              </p>
+            </div>
+            <Button
+              className="rounded-full bg-[#79c6bf] px-6 py-6 text-zinc-900 hover:bg-[#68b7af]"
+              onClick={() => {
+                setDemoSession("owner");
+                router.push("/setup");
+              }}
+            >
+              <Sparkles className="size-4" />
+              Start Here
+              <ArrowRight className="size-4" />
+            </Button>
+          </CardContent>
+        </Card>
         <div className="grid gap-5 md:grid-cols-3">
           {roles.map((role) => (
             <Card key={role.key} className="rounded-[32px] border-white/80 bg-white/90 shadow-[0_20px_60px_rgba(61,58,57,0.08)]">
@@ -44,7 +77,7 @@ export default function LoginPage() {
                     router.push("/dashboard");
                   }}
                 >
-                  Enter Demo Workspace
+                  Start Here
                 </Button>
               </CardContent>
             </Card>

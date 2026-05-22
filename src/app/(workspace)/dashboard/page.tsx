@@ -51,6 +51,23 @@ export default function DashboardPage() {
         <DashboardCard title="Unread Messages" value={String(unreadMessages.length)} hint="Unified inbox waiting on follow-up" icon={uiIcons.messages} />
       </div>
 
+      {workspace.organization.workspaceMode === "demo" ? (
+        <Card className="rounded-[32px] border-[#dff3f0] bg-[linear-gradient(135deg,#ffffff_0%,#eef7f5_100%)]">
+          <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-zinc-400">Guided Onboarding</p>
+              <h2 className="mt-2 font-heading text-2xl font-semibold text-zinc-900">Start here for a real client setup</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-600">
+                This workspace is still Zion &amp; Co., the preserved demo example. Use the guided setup flow to brand a new grooming business, enter services and staff, and create her own working version.
+              </p>
+            </div>
+            <Link href="/setup">
+              <button className="rounded-full bg-zinc-900 px-5 py-3 text-sm font-semibold text-white">Open setup wizard</button>
+            </Link>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <AIInsightCard title="Today's gentle game plan" body={aiSummary} />
         <div className="grid gap-4 sm:grid-cols-2">

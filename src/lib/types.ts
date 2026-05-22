@@ -72,6 +72,20 @@ export interface Service {
   description: string;
 }
 
+export interface SetupServiceInput {
+  name: string;
+  category: Service["category"];
+  durationMinutes: number;
+  price: number;
+  depositAmount: number;
+}
+
+export interface SetupStaffInput {
+  name: string;
+  roleLabel: string;
+  specialty: string;
+}
+
 export interface StaffMember {
   id: string;
   organizationId: string;
@@ -268,6 +282,7 @@ export interface AutomationSetting {
 export interface Organization {
   id: string;
   name: string;
+  workspaceMode: "demo" | "custom";
   brand: BrandSettings;
   hours: string[];
   cancellationPolicy: string;
@@ -321,6 +336,33 @@ export interface MissedCallPayload {
   customerName: string;
   phone: string;
   message: string;
+}
+
+export interface SetupWorkspacePayload {
+  businessName: string;
+  businessSlug: string;
+  logoUrl?: string;
+  portalHeadline?: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  hours: string[];
+  boardingCapacity: number;
+  cancellationPolicy: string;
+  depositPolicy: string;
+  vaccineRequirements: string[];
+  aiGuardrails: string[];
+  services: SetupServiceInput[];
+  staff: SetupStaffInput[];
+}
+
+export interface WebsiteBrandIntake {
+  normalizedUrl: string;
+  businessName?: string;
+  businessSlug?: string;
+  logoUrl?: string;
+  description?: string;
+  primaryColor?: string;
 }
 
 export interface FeedbackEntry {

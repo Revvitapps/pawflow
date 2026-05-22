@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useReducer, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useReducer } from "react";
 
-import { createDemoWorkspace } from "@/lib/demo-data";
+import { createDemoWorkspace, createStarterWorkspace } from "@/lib/demo-data";
 import type {
   AIInteraction,
   Appointment,
@@ -13,51 +13,48 @@ import type {
   Message,
   MissedCallPayload,
   PortalRequestPayload,
+  SetupWorkspacePayload,
 } from "@/lib/types";
 
 const STORAGE_KEY = "pawflow-demo-workspace-v1";
 const SESSION_KEY = "pawflow-demo-session-v1";
+
+const DEFAULT_SESSION: SessionState = {
+  isDemoLoggedIn: false,
+  role: "owner",
+};
+
+function normalizeWorkspace(workspace: DemoWorkspaceState): DemoWorkspaceState {
+  const demo = createDemoWorkspace();
+
+  if (workspace.organization.workspaceMode === "demo") {
+    return {
+      ...workspace,
+      organization: {
+        ...workspace.organization,
+        brand: {
+          ...demo.organization.brand,
+          ...workspace.organization.brand,
+          logoUrl: workspace.organization.brand.logoUrl || demo.organization.brand.logoUrl,
+        },
+      },
+    };
+  }
+
+  return workspace;
+}
 
 type SessionState = {
   isDemoLoggedIn: boolean;
   role: "owner" | "front-desk" | "staff";
 };
 
-function initialWorkspace() {
-  if (typeof window === "undefined") {
-    return createDemoWorkspace();
-  }
+type SessionAction =
+  | { type: "hydrate"; payload: SessionState }
+  | { type: "login"; payload: SessionState["role"] }
+  | { type: "logout" };
 
-  const savedWorkspace = window.localStorage.getItem(STORAGE_KEY);
-  if (!savedWorkspace) {
-    return createDemoWorkspace();
-  }
-
-  try {
-    return JSON.parse(savedWorkspace) as DemoWorkspaceState;
-  } catch {
-    window.localStorage.removeItem(STORAGE_KEY);
-    return createDemoWorkspace();
-  }
-}
-
-function initialSession(): SessionState {
-  if (typeof window === "undefined") {
-    return { isDemoLoggedIn: false, role: "owner" };
-  }
-
-  const savedSession = window.localStorage.getItem(SESSION_KEY);
-  if (!savedSession) {
-    return { isDemoLoggedIn: false, role: "owner" };
-  }
-
-  try {
-    return JSON.parse(savedSession) as SessionState;
-  } catch {
-    window.localStorage.removeItem(SESSION_KEY);
-    return { isDemoLoggedIn: false, role: "owner" };
-  }
-}
+type HydrationAction = { type: "hydrated" };
 
 type BusinessSettingsPatch = Partial<
   Pick<
@@ -69,6 +66,7 @@ type BusinessSettingsPatch = Partial<
 type WorkspaceAction =
   | { type: "reset" }
   | { type: "hydrate"; payload: DemoWorkspaceState }
+  | { type: "start-business-setup"; payload: SetupWorkspacePayload }
   | { type: "create-intake"; payload: { request: PortalRequestPayload; aiSummary: string } }
   | { type: "approve-intake"; payload: { intakeRequestId: string } }
   | { type: "update-appointment-status"; payload: { appointmentId: string; status: AppointmentStatus } }
@@ -96,7 +94,9 @@ function reducer(state: DemoWorkspaceState, action: WorkspaceAction): DemoWorksp
     case "reset":
       return createDemoWorkspace();
     case "hydrate":
-      return action.payload;
+      return normalizeWorkspace(action.payload);
+    case "start-business-setup":
+      return createStarterWorkspace(action.payload);
     case "create-intake": {
       const customerId = crypto.randomUUID();
       const petId = crypto.randomUUID();
@@ -379,6 +379,7 @@ type ProviderValue = {
   setDemoSession: (role?: SessionState["role"]) => void;
   logoutDemoSession: () => void;
   resetWorkspace: () => void;
+  startBusinessSetup: (payload: SetupWorkspacePayload) => void;
   createIntakeRequest: (request: PortalRequestPayload, aiSummary: string) => void;
   approveIntakeRequest: (intakeRequestId: string) => void;
   updateAppointmentStatus: (appointmentId: string, status: AppointmentStatus) => void;
@@ -400,19 +401,80 @@ type ProviderValue = {
 
 const PawFlowContext = createContext<ProviderValue | null>(null);
 
+function sessionReducer(state: SessionState, action: SessionAction): SessionState {
+  switch (action.type) {
+    case "hydrate":
+      return action.payload;
+    case "login":
+      return { isDemoLoggedIn: true, role: action.payload };
+    case "logout":
+      return DEFAULT_SESSION;
+    default:
+      return state;
+  }
+}
+
+function hydrationReducer(state: boolean, action: HydrationAction): boolean {
+  switch (action.type) {
+    case "hydrated":
+      return true;
+    default:
+      return state;
+  }
+}
+
 export function PawFlowProvider({ children }: { children: React.ReactNode }) {
-  const [workspace, dispatch] = useReducer(reducer, undefined, initialWorkspace);
-  const [session, setSession] = useState<SessionState>(initialSession);
-  const hydrated = typeof window !== "undefined";
+  const [workspace, dispatch] = useReducer(reducer, undefined, createDemoWorkspace);
+  const [session, sessionDispatch] = useReducer(sessionReducer, DEFAULT_SESSION);
+  const [hydrated, hydrationDispatch] = useReducer(hydrationReducer, false);
+
+  useEffect(() => {
+    try {
+      const savedWorkspace = window.localStorage.getItem(STORAGE_KEY);
+      if (savedWorkspace) {
+        const parsedWorkspace = normalizeWorkspace(JSON.parse(savedWorkspace) as DemoWorkspaceState);
+        if (parsedWorkspace.organization.workspaceMode === "demo") {
+          window.localStorage.removeItem(STORAGE_KEY);
+        } else {
+          dispatch({ type: "hydrate", payload: parsedWorkspace });
+        }
+      }
+    } catch {
+      window.localStorage.removeItem(STORAGE_KEY);
+    }
+
+    try {
+      const savedSession = window.localStorage.getItem(SESSION_KEY);
+      if (savedSession) {
+        sessionDispatch({ type: "hydrate", payload: JSON.parse(savedSession) as SessionState });
+      }
+    } catch {
+      window.localStorage.removeItem(SESSION_KEY);
+    }
+
+    hydrationDispatch({ type: "hydrated" });
+  }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace));
+    try {
+      if (workspace.organization.workspaceMode === "demo") {
+        window.localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace));
+    } catch {
+      // Ignore storage failures so prototype pages stay usable.
+    }
   }, [workspace, hydrated]);
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    try {
+      window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    } catch {
+      // Ignore storage failures so auth state does not break rendering.
+    }
   }, [session, hydrated]);
 
   const value = useMemo<ProviderValue>(
@@ -421,13 +483,16 @@ export function PawFlowProvider({ children }: { children: React.ReactNode }) {
       session,
       hydrated,
       setDemoSession(role = "owner") {
-        setSession({ isDemoLoggedIn: true, role });
+        sessionDispatch({ type: "login", payload: role });
       },
       logoutDemoSession() {
-        setSession({ isDemoLoggedIn: false, role: "owner" });
+        sessionDispatch({ type: "logout" });
       },
       resetWorkspace() {
         dispatch({ type: "reset" });
+      },
+      startBusinessSetup(payload) {
+        dispatch({ type: "start-business-setup", payload });
       },
       createIntakeRequest(request, aiSummary) {
         dispatch({ type: "create-intake", payload: { request, aiSummary } });

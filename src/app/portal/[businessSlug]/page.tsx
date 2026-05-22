@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
+import { LogoBadge } from "@/components/logo-badge";
 import { usePawFlow } from "@/components/pawflow-provider";
 import { PortalBookingForm } from "@/components/pawflow-ui";
 import { Button } from "@/components/ui/button";
@@ -23,8 +24,21 @@ export default function PortalPage() {
     >
       <div className="mx-auto max-w-6xl space-y-6">
         <header className="rounded-[36px] border border-white/70 bg-white/85 p-6 shadow-[0_20px_80px_rgba(61,58,57,0.08)]">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-zinc-400">Customer Portal · {params.businessSlug}</p>
-          <h1 className="mt-3 font-heading text-5xl font-semibold text-zinc-900">{brand.businessName}</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            {brand.logoUrl ? (
+              <LogoBadge
+                src={brand.logoUrl}
+                alt={`${brand.businessName} logo`}
+                size={68}
+                rounded="rounded-[22px]"
+                className="shadow-md"
+              />
+            ) : null}
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-zinc-400">{params.businessSlug}</p>
+              <h1 className="mt-2 font-heading text-5xl font-semibold text-zinc-900">{brand.businessName}</h1>
+            </div>
+          </div>
           <p className="mt-3 max-w-3xl text-lg leading-8 text-zinc-600">{brand.portalHeadline}</p>
         </header>
 

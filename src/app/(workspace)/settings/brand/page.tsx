@@ -41,6 +41,7 @@ export default function BrandSettingsPage() {
       </Card>
       <BrandPreview
         businessName={brand.businessName}
+        logoUrl={brand.logoUrl}
         primaryColor={brand.primaryColor}
         secondaryColor={brand.secondaryColor}
         accentColor={brand.accentColor}

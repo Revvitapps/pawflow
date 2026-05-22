@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Lightbulb, MessageSquareMore, ThumbsDown, ThumbsUp } from "lucide-react";
 
@@ -19,6 +19,12 @@ import { Textarea } from "@/components/ui/textarea";
 import type { FeedbackEntry, FeedbackSentiment } from "@/lib/types";
 
 const STORAGE_KEY = "pawflow-feedback-v1";
+const MAX_LOCAL_ENTRIES = 50;
+
+type EntriesAction =
+  | { type: "hydrate"; payload: FeedbackEntry[] }
+  | { type: "prepend"; payload: FeedbackEntry }
+  | { type: "replace"; payload: { id: string; entry: FeedbackEntry } };
 
 const sentimentOptions: {
   value: FeedbackSentiment;
@@ -29,24 +35,6 @@ const sentimentOptions: {
   { value: "dislike", label: "Dislike", icon: ThumbsDown },
   { value: "idea", label: "Idea", icon: Lightbulb },
 ];
-
-function initialEntries() {
-  if (typeof window === "undefined") {
-    return [] as FeedbackEntry[];
-  }
-
-  const local = window.localStorage.getItem(STORAGE_KEY);
-  if (!local) {
-    return [] as FeedbackEntry[];
-  }
-
-  try {
-    return JSON.parse(local) as FeedbackEntry[];
-  } catch {
-    window.localStorage.removeItem(STORAGE_KEY);
-    return [] as FeedbackEntry[];
-  }
-}
 
 function routeToLabel(pathname: string) {
   if (pathname === "/") return "Marketing Homepage";
@@ -61,17 +49,40 @@ function routeToLabel(pathname: string) {
 export function FeedbackPanel() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [entries, setEntries] = useState<FeedbackEntry[]>(initialEntries);
+  const [entries, dispatch] = useReducer(
+    (state: FeedbackEntry[], action: EntriesAction) => {
+      switch (action.type) {
+        case "hydrate":
+          return action.payload;
+        case "prepend":
+          return [action.payload, ...state];
+        case "replace":
+          return state.map((item) => (item.id === action.payload.id ? action.payload.entry : item));
+        default:
+          return state;
+      }
+    },
+    [],
+  );
   const [sentiment, setSentiment] = useState<FeedbackSentiment>("idea");
   const [serverPersisted, setServerPersisted] = useState(false);
   const pageLabel = useMemo(() => routeToLabel(pathname), [pathname]);
 
   useEffect(() => {
+    try {
+      const local = window.localStorage.getItem(STORAGE_KEY);
+      if (local) {
+        dispatch({ type: "hydrate", payload: JSON.parse(local) as FeedbackEntry[] });
+      }
+    } catch {
+      window.localStorage.removeItem(STORAGE_KEY);
+    }
+
     fetch("/api/feedback", { cache: "no-store" })
       .then((response) => response.json())
       .then((data: { entries?: FeedbackEntry[]; persisted?: boolean }) => {
         if (Array.isArray(data.entries) && data.entries.length) {
-          setEntries(data.entries);
+          dispatch({ type: "hydrate", payload: data.entries });
         }
         setServerPersisted(Boolean(data.persisted));
       })
@@ -79,7 +90,11 @@ export function FeedbackPanel() {
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, MAX_LOCAL_ENTRIES)));
+    } catch {
+      // Ignore quota errors and keep the in-memory notes list available.
+    }
   }, [entries]);
 
   return (
@@ -115,7 +130,7 @@ export function FeedbackPanel() {
               source: serverPersisted ? "vercel" : "local",
             };
 
-            setEntries((current) => [entry, ...current]);
+            dispatch({ type: "prepend", payload: entry });
             event.currentTarget.reset();
             setSentiment("idea");
 
@@ -128,7 +143,7 @@ export function FeedbackPanel() {
               const data = (await response.json()) as { persisted?: boolean; entry?: FeedbackEntry };
               setServerPersisted(Boolean(data.persisted));
               if (data.entry) {
-                setEntries((current) => current.map((item) => (item.id === entry.id ? data.entry! : item)));
+                dispatch({ type: "replace", payload: { id: entry.id, entry: data.entry } });
               }
             } catch {
               // Local fallback already stored.
