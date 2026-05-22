@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Nunito } from "next/font/google";
 
+import { FeedbackPanel } from "@/components/feedback-panel";
 import { PawFlowProvider } from "@/components/pawflow-provider";
 
 import "./globals.css";
@@ -31,7 +32,10 @@ export default function RootLayout({
       className={`${nunito.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <PawFlowProvider>{children}</PawFlowProvider>
+        <PawFlowProvider>
+          {children}
+          <FeedbackPanel />
+        </PawFlowProvider>
       </body>
     </html>
   );

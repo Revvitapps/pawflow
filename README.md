@@ -21,6 +21,7 @@ Included in this MVP:
 - Reviews + reactivation tools
 - White-label brand settings
 - Pet parent portal
+- Global prototype feedback drawer
 - Mock AI, Supabase, and Twilio fallbacks
 
 ## Tech Stack
@@ -103,10 +104,12 @@ Key files:
 - [`src/components/app-shell.tsx`](src/components/app-shell.tsx): shared workspace shell
 - [`src/components/pawflow-provider.tsx`](src/components/pawflow-provider.tsx): demo workspace store and actions
 - [`src/components/pawflow-ui.tsx`](src/components/pawflow-ui.tsx): shared product UI blocks
+- [`src/components/feedback-panel.tsx`](src/components/feedback-panel.tsx): side-tab feedback drawer across the prototype
 - [`src/lib/types.ts`](src/lib/types.ts): domain models
 - [`src/lib/demo-data.ts`](src/lib/demo-data.ts): seeded tenant data
 - [`src/lib/ai.ts`](src/lib/ai.ts): AI service module with OpenAI + fallback mode
 - [`src/lib/actions.ts`](src/lib/actions.ts): server-side AI action dispatcher
+- [`src/lib/feedback-store.ts`](src/lib/feedback-store.ts): optional Vercel Blob-backed feedback storage
 - [`src/lib/twilio.ts`](src/lib/twilio.ts): Twilio/mock sending structure
 - [`src/lib/supabase/client.ts`](src/lib/supabase/client.ts): browser client helper
 - [`src/lib/supabase/server.ts`](src/lib/supabase/server.ts): server client helper
@@ -130,6 +133,7 @@ Key files:
 - `/settings/brand` white-label brand settings
 - `/settings/business` business settings
 - `/portal/[businessSlug]` pet parent portal
+- Side-tab feedback drawer available across all pages
 
 ## AI Setup
 
@@ -181,6 +185,23 @@ Current MVP behavior:
 
 - Missing keys: mock-send succeeds and creates message logs
 - Present keys: architecture is ready for a real Twilio implementation
+
+## Prototype Feedback Notes
+
+The app includes a persistent side-tab feedback drawer so you can annotate the prototype while reviewing it.
+
+It captures:
+
+- Which page you were on
+- Which section or area you are commenting on
+- What you like
+- What you do not like
+- What you would add
+
+Storage behavior:
+
+- With `BLOB_READ_WRITE_TOKEN` configured on Vercel, notes can be shared through Vercel Blob storage
+- Without Blob configuration, notes fall back to browser localStorage so the feature still works immediately
 
 ## Deploying To Vercel
 

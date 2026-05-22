@@ -43,6 +43,8 @@ export type AiTask =
   | "generateMissedCallTextBack"
   | "answerReceptionistQuestion";
 
+export type FeedbackSentiment = "like" | "dislike" | "idea";
+
 export interface BrandSettings {
   businessName: string;
   businessSlug: string;
@@ -319,4 +321,17 @@ export interface MissedCallPayload {
   customerName: string;
   phone: string;
   message: string;
+}
+
+export interface FeedbackEntry {
+  id: string;
+  route: string;
+  pageLabel: string;
+  section: string;
+  sentiment: FeedbackSentiment;
+  liked: string;
+  disliked: string;
+  suggestion: string;
+  createdAt: string;
+  source: "local" | "vercel";
 }
