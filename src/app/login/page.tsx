@@ -35,9 +35,9 @@ export default function LoginPage() {
           <div className="relative mx-auto mb-5 h-20 w-20 overflow-hidden rounded-[28px] bg-white shadow-[0_20px_60px_rgba(61,58,57,0.08)]">
             <Image src="/paw-flow-logo.png" alt="PawFlow logo" fill className="object-contain" sizes="80px" />
           </div>
-          <p className="text-sm font-semibold uppercase tracking-[0.32em] text-zinc-400">Demo Workspace</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.32em] text-zinc-400">Workspace Access</p>
           <h1 className="mt-3 font-heading text-5xl font-semibold text-zinc-900">{workspace.organization.brand.businessName}</h1>
-          <p className="mt-4 text-lg text-zinc-600">Pick a role and enter a fully interactive PawFlow prototype.</p>
+          <p className="mt-4 text-lg text-zinc-600">Pick a role and open the workspace.</p>
         </div>
         <Card className="mb-6 rounded-[32px] border-[#dff3f0] bg-[linear-gradient(135deg,#ffffff_0%,#eef7f5_100%)] shadow-[0_20px_60px_rgba(61,58,57,0.08)]">
           <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
@@ -45,7 +45,7 @@ export default function LoginPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-zinc-400">New Client Setup</p>
               <h2 className="mt-2 font-heading text-3xl font-semibold text-zinc-900">Start Here</h2>
               <p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-600">
-                Walk her through branding her own grooming business, entering services and staff, and launching her own workspace while leaving Zion &amp; Co. untouched as the demo sample.
+                Set up branding, services, staff, and business details for a new workspace.
               </p>
             </div>
             <Button

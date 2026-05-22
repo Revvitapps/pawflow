@@ -186,7 +186,7 @@ export default function HomePage() {
           <div className="grid gap-8 lg:grid-cols-[1fr_0.8fr]">
             <div>
               <p className="text-sm uppercase tracking-[0.32em] text-white/50">Pricing Preview</p>
-              <h2 className="mt-3 font-heading text-4xl font-semibold">Start with a demo-mode MVP. Grow into your branded ops stack.</h2>
+              <h2 className="mt-3 font-heading text-4xl font-semibold">Start with the essentials. Grow into your branded ops stack.</h2>
               <p className="mt-4 max-w-2xl text-base leading-8 text-white/70">
                 Built for Vercel deployment, AI-ready from the start, and structured for real Supabase + Twilio + payments when you&apos;re ready.
               </p>
@@ -206,7 +206,7 @@ export default function HomePage() {
           </div>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/login">
-              <Button className="rounded-full bg-[#79c6bf] text-zinc-900 hover:bg-[#67b6af]">Try the demo</Button>
+              <Button className="rounded-full bg-[#79c6bf] text-zinc-900 hover:bg-[#67b6af]">Get started</Button>
             </Link>
             <Link href="/portal/zion-and-co-grooming-lodge">
               <Button variant="outline" className="rounded-full border-white/30 bg-transparent text-white hover:bg-white/10">

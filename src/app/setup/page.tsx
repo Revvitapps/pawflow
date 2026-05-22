@@ -107,12 +107,12 @@ export default function SetupPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.32em] text-zinc-400">Start Here</p>
             <h1 className="mt-2 font-heading text-5xl font-semibold text-zinc-900">Set up your own grooming business</h1>
             <p className="mt-3 max-w-3xl text-lg text-zinc-600">
-              This walkthrough simulates a new client setup. Zion stays untouched as the sample demo, and this flow creates your own branded workspace.
+              Build your branded workspace, add services and staff, and get your customer-facing portal ready to share.
             </p>
           </div>
           <Button variant="outline" className="rounded-full" onClick={() => router.push("/login")}>
             <ArrowLeft className="size-4" />
-            Back to demo login
+            Back
           </Button>
         </div>
 
@@ -249,8 +249,7 @@ export default function SetupPage() {
                     Ready to launch your workspace
                   </div>
                   <p className="text-sm leading-7 text-zinc-700">
-                    This will create a fresh branded workspace for her business with her own services, staff, hours, and portal branding.
-                    Zion &amp; Co. remains available as the separate demo example any time you reset back to the sample workspace.
+                    This will create a branded workspace with services, staff, business settings, and a customer portal tailored to the business.
                   </p>
                 </div>
               ) : null}

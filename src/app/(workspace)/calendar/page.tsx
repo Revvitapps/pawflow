@@ -129,7 +129,7 @@ export default function CalendarPage() {
               <DialogContent className="max-w-xl rounded-[32px]">
                 <DialogHeader>
                   <DialogTitle>Create appointment</DialogTitle>
-                  <DialogDescription>Build a realistic appointment directly into the demo workspace.</DialogDescription>
+                  <DialogDescription>Create an appointment directly in the workspace schedule.</DialogDescription>
                 </DialogHeader>
                 <form
                   className="space-y-4"

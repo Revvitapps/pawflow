@@ -58,7 +58,7 @@ export default function DashboardPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-zinc-400">Guided Onboarding</p>
               <h2 className="mt-2 font-heading text-2xl font-semibold text-zinc-900">Start here for a real client setup</h2>
               <p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-600">
-                This workspace is still Zion &amp; Co., the preserved demo example. Use the guided setup flow to brand a new grooming business, enter services and staff, and create her own working version.
+                Use the guided setup flow to brand the workspace, enter services and staff, and get the business ready to share with customers.
               </p>
             </div>
             <Link href="/setup">
