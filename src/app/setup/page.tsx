@@ -203,6 +203,11 @@ export default function SetupPage() {
 
               {step === 1 ? (
                 <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Service name</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Base charge</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Duration (minutes)</p>
+                  </div>
                   <div className="grid gap-3">
                     <p className="text-sm font-medium text-zinc-600">Service 1</p>
                     <div className="grid gap-4 sm:grid-cols-3">
