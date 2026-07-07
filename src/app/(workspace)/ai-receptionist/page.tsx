@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { CallSimulator } from "@/components/call-simulator";
 import { usePawFlow } from "@/components/pawflow-provider";
 import { EmptyState } from "@/components/pawflow-ui";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,8 @@ export default function AIReceptionistPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <CallSimulator />
 
       <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
         <Card className="rounded-[32px] border-white/80 bg-white/90">

@@ -494,9 +494,13 @@ export function PawFlowProvider({ children }: { children: React.ReactNode }) {
       hydrated,
       setDemoSession(role = "owner") {
         sessionDispatch({ type: "login", payload: role });
+        // Cookie mirrors the demo session so the proxy (server) can guard
+        // workspace routes. Real Supabase Auth replaces this (fix F8).
+        document.cookie = `pawflow_session=demo-${role}; path=/; max-age=86400; samesite=lax`;
       },
       logoutDemoSession() {
         sessionDispatch({ type: "logout" });
+        document.cookie = "pawflow_session=; path=/; max-age=0; samesite=lax";
       },
       resetWorkspace() {
         dispatch({ type: "reset" });
