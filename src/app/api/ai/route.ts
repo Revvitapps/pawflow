@@ -20,10 +20,21 @@ export async function POST(request: Request) {
   const limited = rateLimit(request, "ai", { capacity: 30, refillPerMinute: 30 });
   if (limited) return limited;
 
+  const raw = await request.text();
+  if (raw.length > 100_000) {
+    return NextResponse.json({ error: "Payload too large (100KB max)." }, { status: 413 });
+  }
+
   let task: (typeof ALLOWED_TASKS)[number];
   let payload: Record<string, unknown>;
   try {
-    const body = requireObject(await request.json().catch(() => null), "body");
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = null;
+    }
+    const body = requireObject(parsed, "body");
     task = requireOneOf(body.task, "task", ALLOWED_TASKS);
     payload = requireObject(body.payload, "payload");
   } catch (error) {

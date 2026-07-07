@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { usePawFlow } from "@/components/pawflow-provider";
+import type { DemoWorkspaceState } from "@/lib/types";
 import {
   AIInsightCard,
   DashboardCard,
@@ -35,12 +36,26 @@ export default function DashboardPage() {
   const outstanding = workspace.payments.filter((payment) => payment.status !== "paid").reduce((sum, payment) => sum + payment.amount, 0);
   const deposits = workspace.payments.reduce((sum, payment) => sum + payment.depositAmount, 0);
 
+  // Run the AI ops brief ONCE per dashboard visit. This previously depended
+  // on `workspace` and logged its own result back into the workspace, which
+  // re-triggered the effect in an infinite loop — each iteration POSTing the
+  // full workspace JSON to /api/ai (the July 7 bandwidth incident).
+  const summaryRequested = useRef(false);
   useEffect(() => {
-    runAiTask("summarizeDay", { workspace }).then((output) => {
+    if (summaryRequested.current) return;
+    summaryRequested.current = true;
+    // Send only the fields summarizeDay actually reads — not the whole workspace.
+    const slimWorkspace = {
+      appointments: workspace.appointments.map(({ date, startTime, status }) => ({ date, startTime, status })),
+      boardingStays: workspace.boardingStays.map(({ status }) => ({ status })),
+      missedCalls: workspace.missedCalls.map(() => ({})),
+    } as unknown as DemoWorkspaceState;
+    runAiTask("summarizeDay", { workspace: slimWorkspace }).then((output) => {
       setAiSummary(output);
       addAiLog("summarizeDay", "Dashboard daily summary", output);
     });
-  }, [addAiLog, runAiTask, workspace]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-6">
