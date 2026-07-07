@@ -161,35 +161,42 @@ export default function SetupPage() {
                     </div>
                     {websiteError ? <p className="mt-3 text-sm text-rose-600">{websiteError}</p> : null}
                   </div>
-                  <Input placeholder="Business name" value={form.businessName} onChange={(e) => updateField("businessName", e.target.value)} />
-                  <Input
-                    placeholder="Business slug"
-                    value={form.businessSlug}
-                    onChange={(e) => updateField("businessSlug", e.target.value.toLowerCase().replace(/\s+/g, "-"))}
-                  />
-                  <Input placeholder="Logo URL placeholder" value={form.logoUrl} onChange={(e) => updateField("logoUrl", e.target.value)} />
+                  <LabeledField label="Business name">
+                    <Input value={form.businessName} onChange={(e) => updateField("businessName", e.target.value)} />
+                  </LabeledField>
+                  <LabeledField label="Business slug">
+                    <Input
+                      value={form.businessSlug}
+                      onChange={(e) => updateField("businessSlug", e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+                    />
+                  </LabeledField>
+                  <LabeledField label="Logo URL">
+                    <Input value={form.logoUrl} onChange={(e) => updateField("logoUrl", e.target.value)} />
+                  </LabeledField>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Input
-                      placeholder="Contact email"
-                      value={form.contactEmail}
-                      onChange={(e) => updateField("contactEmail", e.target.value)}
-                    />
-                    <Input
-                      placeholder="Contact phone"
-                      value={form.contactPhone}
-                      onChange={(e) => updateField("contactPhone", e.target.value)}
-                    />
+                    <LabeledField label="Contact email">
+                      <Input value={form.contactEmail} onChange={(e) => updateField("contactEmail", e.target.value)} />
+                    </LabeledField>
+                    <LabeledField label="Contact phone">
+                      <Input value={form.contactPhone} onChange={(e) => updateField("contactPhone", e.target.value)} />
+                    </LabeledField>
                   </div>
-                  <Input placeholder="Business address" value={form.address} onChange={(e) => updateField("address", e.target.value)} />
-                  <Textarea
-                    placeholder="Portal headline"
-                    value={form.portalHeadline}
-                    onChange={(e) => updateField("portalHeadline", e.target.value)}
-                  />
+                  <LabeledField label="Business address">
+                    <Input value={form.address} onChange={(e) => updateField("address", e.target.value)} />
+                  </LabeledField>
+                  <LabeledField label="Portal headline">
+                    <Textarea value={form.portalHeadline} onChange={(e) => updateField("portalHeadline", e.target.value)} />
+                  </LabeledField>
                   <div className="grid gap-4 sm:grid-cols-3">
-                    <Input type="color" value={form.primaryColor} onChange={(e) => updateField("primaryColor", e.target.value)} />
-                    <Input type="color" value={form.secondaryColor} onChange={(e) => updateField("secondaryColor", e.target.value)} />
-                    <Input type="color" value={form.accentColor} onChange={(e) => updateField("accentColor", e.target.value)} />
+                    <LabeledField label="Primary color">
+                      <Input type="color" value={form.primaryColor} onChange={(e) => updateField("primaryColor", e.target.value)} />
+                    </LabeledField>
+                    <LabeledField label="Secondary color">
+                      <Input type="color" value={form.secondaryColor} onChange={(e) => updateField("secondaryColor", e.target.value)} />
+                    </LabeledField>
+                    <LabeledField label="Accent color">
+                      <Input type="color" value={form.accentColor} onChange={(e) => updateField("accentColor", e.target.value)} />
+                    </LabeledField>
                   </div>
                 </div>
               ) : null}
@@ -199,25 +206,43 @@ export default function SetupPage() {
                   <div className="grid gap-3">
                     <p className="text-sm font-medium text-zinc-600">Service 1</p>
                     <div className="grid gap-4 sm:grid-cols-3">
-                      <Input value={form.service1Name} onChange={(e) => updateField("service1Name", e.target.value)} />
-                      <Input type="number" value={form.service1Price} onChange={(e) => updateField("service1Price", e.target.value)} />
-                      <Input type="number" value={form.service1Duration} onChange={(e) => updateField("service1Duration", e.target.value)} />
+                      <LabeledField label="Service name">
+                        <Input value={form.service1Name} onChange={(e) => updateField("service1Name", e.target.value)} />
+                      </LabeledField>
+                      <LabeledField label="Base charge">
+                        <Input type="number" value={form.service1Price} onChange={(e) => updateField("service1Price", e.target.value)} />
+                      </LabeledField>
+                      <LabeledField label="Duration (minutes)">
+                        <Input type="number" value={form.service1Duration} onChange={(e) => updateField("service1Duration", e.target.value)} />
+                      </LabeledField>
                     </div>
                   </div>
                   <div className="grid gap-3">
                     <p className="text-sm font-medium text-zinc-600">Service 2</p>
                     <div className="grid gap-4 sm:grid-cols-3">
-                      <Input value={form.service2Name} onChange={(e) => updateField("service2Name", e.target.value)} />
-                      <Input type="number" value={form.service2Price} onChange={(e) => updateField("service2Price", e.target.value)} />
-                      <Input type="number" value={form.service2Duration} onChange={(e) => updateField("service2Duration", e.target.value)} />
+                      <LabeledField label="Service name">
+                        <Input value={form.service2Name} onChange={(e) => updateField("service2Name", e.target.value)} />
+                      </LabeledField>
+                      <LabeledField label="Base charge">
+                        <Input type="number" value={form.service2Price} onChange={(e) => updateField("service2Price", e.target.value)} />
+                      </LabeledField>
+                      <LabeledField label="Duration (minutes)">
+                        <Input type="number" value={form.service2Duration} onChange={(e) => updateField("service2Duration", e.target.value)} />
+                      </LabeledField>
                     </div>
                   </div>
                   <div className="grid gap-3">
                     <p className="text-sm font-medium text-zinc-600">Service 3</p>
                     <div className="grid gap-4 sm:grid-cols-3">
-                      <Input value={form.service3Name} onChange={(e) => updateField("service3Name", e.target.value)} />
-                      <Input type="number" value={form.service3Price} onChange={(e) => updateField("service3Price", e.target.value)} />
-                      <Input type="number" value={form.service3Duration} onChange={(e) => updateField("service3Duration", e.target.value)} />
+                      <LabeledField label="Service name">
+                        <Input value={form.service3Name} onChange={(e) => updateField("service3Name", e.target.value)} />
+                      </LabeledField>
+                      <LabeledField label="Base charge">
+                        <Input type="number" value={form.service3Price} onChange={(e) => updateField("service3Price", e.target.value)} />
+                      </LabeledField>
+                      <LabeledField label="Duration (minutes)">
+                        <Input type="number" value={form.service3Duration} onChange={(e) => updateField("service3Duration", e.target.value)} />
+                      </LabeledField>
                     </div>
                   </div>
                 </div>
@@ -225,20 +250,38 @@ export default function SetupPage() {
 
               {step === 2 ? (
                 <div className="space-y-4">
-                  <Input placeholder="Owner / admin name" value={form.ownerName} onChange={(e) => updateField("ownerName", e.target.value)} />
-                  <Input placeholder="Lead groomer name" value={form.groomerName} onChange={(e) => updateField("groomerName", e.target.value)} />
-                  <Input placeholder="Front desk / scheduler name" value={form.frontDeskName} onChange={(e) => updateField("frontDeskName", e.target.value)} />
+                  <LabeledField label="Owner / admin name">
+                    <Input value={form.ownerName} onChange={(e) => updateField("ownerName", e.target.value)} />
+                  </LabeledField>
+                  <LabeledField label="Lead groomer name">
+                    <Input value={form.groomerName} onChange={(e) => updateField("groomerName", e.target.value)} />
+                  </LabeledField>
+                  <LabeledField label="Front desk / scheduler name">
+                    <Input value={form.frontDeskName} onChange={(e) => updateField("frontDeskName", e.target.value)} />
+                  </LabeledField>
                 </div>
               ) : null}
 
               {step === 3 ? (
                 <div className="space-y-4">
-                  <Textarea value={form.hours} onChange={(e) => updateField("hours", e.target.value)} placeholder="Hours, one line per day pattern" />
-                  <Input type="number" value={form.boardingCapacity} onChange={(e) => updateField("boardingCapacity", e.target.value)} placeholder="Boarding capacity" />
-                  <Textarea value={form.cancellationPolicy} onChange={(e) => updateField("cancellationPolicy", e.target.value)} placeholder="Cancellation policy" />
-                  <Textarea value={form.depositPolicy} onChange={(e) => updateField("depositPolicy", e.target.value)} placeholder="Deposit settings" />
-                  <Textarea value={form.vaccineRequirements} onChange={(e) => updateField("vaccineRequirements", e.target.value)} placeholder="Vaccine requirements" />
-                  <Textarea value={form.aiGuardrails} onChange={(e) => updateField("aiGuardrails", e.target.value)} placeholder="AI guardrails" />
+                  <LabeledField label="Business hours">
+                    <Textarea value={form.hours} onChange={(e) => updateField("hours", e.target.value)} placeholder="One line per day pattern" />
+                  </LabeledField>
+                  <LabeledField label="Available boarding crates">
+                    <Input type="number" value={form.boardingCapacity} onChange={(e) => updateField("boardingCapacity", e.target.value)} />
+                  </LabeledField>
+                  <LabeledField label="Cancellation policy">
+                    <Textarea value={form.cancellationPolicy} onChange={(e) => updateField("cancellationPolicy", e.target.value)} />
+                  </LabeledField>
+                  <LabeledField label="Deposit policy">
+                    <Textarea value={form.depositPolicy} onChange={(e) => updateField("depositPolicy", e.target.value)} />
+                  </LabeledField>
+                  <LabeledField label="Vaccine requirements">
+                    <Textarea value={form.vaccineRequirements} onChange={(e) => updateField("vaccineRequirements", e.target.value)} />
+                  </LabeledField>
+                  <LabeledField label="AI guardrails">
+                    <Textarea value={form.aiGuardrails} onChange={(e) => updateField("aiGuardrails", e.target.value)} />
+                  </LabeledField>
                 </div>
               ) : null}
 
@@ -337,5 +380,14 @@ export default function SetupPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function LabeledField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="grid gap-2 text-sm font-medium text-zinc-700">
+      <span>{label}</span>
+      {children}
+    </label>
   );
 }

@@ -73,6 +73,13 @@ type BusinessSettingsPatch = Partial<
   >
 >;
 
+type ServicePatch = Partial<
+  Pick<
+    DemoWorkspaceState["services"][number],
+    "name" | "price" | "durationMinutes" | "depositAmount" | "description"
+  >
+>;
+
 type WorkspaceAction =
   | { type: "reset" }
   | { type: "hydrate"; payload: DemoWorkspaceState }
@@ -96,6 +103,10 @@ type WorkspaceAction =
   | {
       type: "update-business";
       payload: BusinessSettingsPatch;
+    }
+  | {
+      type: "update-service";
+      payload: { serviceId: string; patch: ServicePatch };
     }
   | { type: "simulate-missed-call"; payload: { input: MissedCallPayload; textBack: string; intent: string } };
 
@@ -362,6 +373,13 @@ function reducer(state: DemoWorkspaceState, action: WorkspaceAction): DemoWorksp
         ...state,
         organization: { ...state.organization, ...action.payload },
       };
+    case "update-service":
+      return {
+        ...state,
+        services: state.services.map((service) =>
+          service.id === action.payload.serviceId ? { ...service, ...action.payload.patch } : service,
+        ),
+      };
     case "simulate-missed-call":
       return {
         ...state,
@@ -404,6 +422,7 @@ type ProviderValue = {
   toggleAutomation: (key: string) => void;
   updateBrandSettings: (payload: Partial<DemoWorkspaceState["organization"]["brand"]>) => void;
   updateBusinessSettings: (payload: BusinessSettingsPatch) => void;
+  updateService: (serviceId: string, patch: ServicePatch) => void;
   simulateMissedCall: (input: MissedCallPayload, textBack: string, intent: string) => void;
   runAiTask: <T>(task: string, payload: T) => Promise<string>;
   hydrated: boolean;
@@ -567,6 +586,9 @@ export function PawFlowProvider({ children }: { children: React.ReactNode }) {
       },
       updateBusinessSettings(payload) {
         dispatch({ type: "update-business", payload });
+      },
+      updateService(serviceId, patch) {
+        dispatch({ type: "update-service", payload: { serviceId, patch } });
       },
       simulateMissedCall(input, textBack, intent) {
         dispatch({ type: "simulate-missed-call", payload: { input, textBack, intent } });
