@@ -100,8 +100,8 @@ export default function SetupPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#e8f7f4_0%,#fff7ef_45%,#ffffff_100%)] px-4 py-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#e8f7f4_0%,#fff7ef_45%,#ffffff_100%)] px-0 py-0 md:px-6 md:py-8">
+      <div className="mx-auto w-full max-w-[460px] space-y-6 overflow-hidden border border-white/80 bg-[rgba(255,250,247,0.94)] px-4 py-8 shadow-[0_28px_120px_rgba(61,58,57,0.14)] backdrop-blur-xl md:rounded-[40px]">
         <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.32em] text-zinc-400">Start Here</p>

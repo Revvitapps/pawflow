@@ -31,7 +31,7 @@ export default function RootLayout({
       lang="en"
       className={`${nunito.variable} ${fraunces.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="mobile-demo min-h-full flex flex-col">
         <PawFlowProvider>
           {children}
           <FeedbackPanel />

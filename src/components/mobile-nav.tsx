@@ -18,7 +18,7 @@ export function MobileNav({ color }: { color: string }) {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed right-4 bottom-4 left-4 z-40 rounded-[28px] border border-white/80 bg-white/90 p-2 shadow-[0_25px_80px_rgba(61,58,57,0.12)] backdrop-blur-xl lg:hidden">
+    <nav className="fixed bottom-4 left-1/2 z-40 w-[calc(min(100vw-1rem,444px))] -translate-x-1/2 rounded-[28px] border border-white/80 bg-white/90 p-2 shadow-[0_25px_80px_rgba(61,58,57,0.14)] backdrop-blur-xl md:bottom-6">
       <div className="grid grid-cols-5 gap-2">
         {items.map((item) => {
           const Icon = item.icon;

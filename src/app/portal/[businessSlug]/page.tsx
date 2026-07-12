@@ -19,10 +19,10 @@ export default function PortalPage() {
 
   return (
     <main
-      className="min-h-screen px-4 py-8"
+      className="min-h-screen px-0 py-0 md:px-6 md:py-8"
       style={{ background: `linear-gradient(180deg, ${brand.secondaryColor} 0%, white 50%, #fffaf7 100%)` }}
     >
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="mx-auto w-full max-w-[460px] space-y-6 overflow-hidden border border-white/80 bg-[rgba(255,255,255,0.82)] px-4 py-8 shadow-[0_28px_120px_rgba(61,58,57,0.14)] backdrop-blur-xl md:rounded-[40px]">
         <header className="rounded-[36px] border border-white/70 bg-white/85 p-6 shadow-[0_20px_80px_rgba(61,58,57,0.08)]">
           <div className="flex flex-wrap items-center gap-3">
             {brand.logoUrl ? (

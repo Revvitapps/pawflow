@@ -7,7 +7,6 @@ import { ArrowRight, Bell, Home, LogOut, RotateCcw, Sparkles } from "lucide-reac
 
 import { LogoBadge } from "@/components/logo-badge";
 import { MobileNav } from "@/components/mobile-nav";
-import { Sidebar } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { usePawFlow } from "@/components/pawflow-provider";
 
@@ -36,24 +35,41 @@ export function AppShell({
 
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen px-0 py-0 md:px-6 md:py-8"
       style={{
-        background: `radial-gradient(circle at top left, ${colors.secondaryColor} 0%, white 38%, #fffaf7 100%)`,
+        background: `radial-gradient(circle at top left, ${colors.secondaryColor} 0%, rgba(255,255,255,0.92) 38%, #fffaf7 100%)`,
       }}
     >
-      <div className="mx-auto flex min-h-screen max-w-[1600px] overflow-x-clip">
-        <Sidebar
-          businessName={workspace.organization.brand.businessName}
-          logoUrl={workspaceLogoUrl}
-          colors={{
-            primary: colors.primaryColor,
-            accent: colors.accentColor,
-            neutral: colors.neutralColor,
+      <div className="mx-auto flex min-h-screen w-full max-w-[460px] flex-col overflow-hidden border border-white/80 bg-[rgba(255,250,247,0.92)] shadow-[0_28px_120px_rgba(61,58,57,0.14)] backdrop-blur-xl md:min-h-[calc(100vh-4rem)] md:rounded-[40px]">
+        <div
+          className="border-b border-white/70 px-4 py-3"
+          style={{
+            background: `linear-gradient(180deg, ${colors.primaryColor}14 0%, rgba(255,255,255,0.88) 100%)`,
           }}
-        />
-        <div className="flex min-h-screen flex-1 flex-col pb-28 lg:pb-0">
-          <header className="sticky top-0 z-30 border-b border-white/70 bg-white/75 px-4 py-4 backdrop-blur-xl md:px-6">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-3 py-2 shadow-sm">
+              <LogoBadge src="/paw-flow-logo.png" alt="PawFlow logo" size={24} rounded="rounded-full" className="shadow-none" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">PawFlow Demo</span>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/75 px-3 py-2 text-[11px] font-medium text-zinc-600 shadow-sm">
+              {workspaceLogoUrl ? (
+                <LogoBadge
+                  src={workspaceLogoUrl}
+                  alt={`${workspace.organization.brand.businessName} logo`}
+                  size={18}
+                  rounded="rounded-full"
+                  className="shadow-none"
+                />
+              ) : null}
+              <span className="truncate">{workspace.organization.brand.businessName}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col pb-28">
+          <header className="sticky top-0 z-30 border-b border-white/70 bg-white/80 px-4 py-4 backdrop-blur-xl">
+            <div className="flex flex-col gap-4">
               <div className="flex min-w-0 items-start gap-3 sm:gap-4">
                 <LogoBadge src="/paw-flow-logo.png" alt="PawFlow logo" size={48} rounded="rounded-[18px]" className="shrink-0" />
                 <div className="min-w-0">
@@ -78,7 +94,7 @@ export function AppShell({
                   <p className="mt-1 max-w-2xl text-sm text-zinc-600">{description}</p>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+              <div className="flex flex-wrap items-center gap-2">
                 <Link href="/">
                   <Button variant="outline" className="rounded-full px-3 text-xs sm:text-sm">
                     <Home className="size-4" />
@@ -109,7 +125,7 @@ export function AppShell({
               </div>
             </div>
           </header>
-          <main className="flex-1 px-4 py-5 md:px-6">{children}</main>
+          <main className="flex-1 overflow-x-hidden px-4 py-5">{children}</main>
         </div>
       </div>
       <MobileNav color={colors.primaryColor} />
