@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
+
 import { usePawFlow } from "@/components/pawflow-provider";
+import { Button } from "@/components/ui/button";
 import { MiniMetric } from "@/components/pawflow-ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function PaymentsPage() {
-  const { workspace } = usePawFlow();
+  const { workspace, updatePaymentStatus, addMessage } = usePawFlow();
   const unpaid = workspace.payments.filter((payment) => payment.status === "unpaid").reduce((sum, payment) => sum + payment.amount, 0);
   const deposits = workspace.payments.reduce((sum, payment) => sum + payment.depositAmount, 0);
   const noShowFees = workspace.appointments.filter((appointment) => appointment.status === "no-show").length * 25;
@@ -33,7 +36,40 @@ export default function PaymentsPage() {
                 </div>
                 <p className="text-sm text-zinc-700">Total ${payment.amount}</p>
                 <p className="text-sm text-zinc-700">Deposit ${payment.depositAmount}</p>
-                <div className="rounded-full bg-white px-3 py-2 text-sm font-medium text-zinc-700">{payment.status}</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="rounded-full bg-white px-3 py-2 text-sm font-medium text-zinc-700">{payment.status}</div>
+                  {payment.status !== "paid" ? (
+                    <Button
+                      size="sm"
+                      className="rounded-full"
+                      onClick={() => updatePaymentStatus(payment.id, "paid")}
+                    >
+                      Mark paid
+                    </Button>
+                  ) : null}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() => {
+                      if (!customer) return;
+                      addMessage({
+                        organizationId: workspace.organization.id,
+                        customerId: customer.id,
+                        channel: "sms",
+                        direction: "outbound",
+                        subject: "Payment reminder",
+                        body: `Friendly reminder: ${payment.label} for $${payment.amount} is ${payment.status}.`,
+                        sender: "PawFlow Payments",
+                      });
+                    }}
+                  >
+                    Send reminder
+                  </Button>
+                  <Link href={`/payments/${payment.id}`}>
+                    <Button size="sm" variant="outline" className="rounded-full">Detail</Button>
+                  </Link>
+                </div>
               </div>
             );
           })}

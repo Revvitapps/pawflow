@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { format, formatDistanceToNowStrict, parseISO } from "date-fns";
 import {
   AlertTriangle,
@@ -77,13 +78,15 @@ export function DashboardCard({
   value,
   hint,
   icon: Icon,
+  href,
 }: {
   title: string;
   value: string;
   hint: string;
   icon: React.ComponentType<{ className?: string }>;
+  href?: string;
 }) {
-  return (
+  const content = (
     <Card className="rounded-[28px] border-white/80 bg-white/85 shadow-[0_20px_60px_rgba(61,58,57,0.08)]">
       <CardContent className="p-5">
         <div className="mb-4 flex items-center justify-between">
@@ -97,6 +100,16 @@ export function DashboardCard({
       </CardContent>
     </Card>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className="block transition hover:scale-[0.99]">
+        {content}
+      </Link>
+    );
+  }
+
+  return content;
 }
 
 export function AIInsightCard({ title, body }: { title: string; body: string }) {
@@ -139,6 +152,7 @@ export function AppointmentCard({
   serviceLabel,
   staffName,
   onStatusChange,
+  href,
 }: {
   appointment: Appointment;
   pet?: Pet;
@@ -146,6 +160,7 @@ export function AppointmentCard({
   serviceLabel: string;
   staffName: string;
   onStatusChange?: (status: AppointmentStatus) => void;
+  href?: string;
 }) {
   const statuses: AppointmentStatus[] = [
     "requested",
@@ -158,7 +173,7 @@ export function AppointmentCard({
     "no-show",
   ];
 
-  return (
+  const content = (
     <Card className="rounded-[28px] border-white/70 bg-white/90">
       <CardContent className="space-y-4 p-5">
         <div className="flex items-start justify-between gap-3">
@@ -202,6 +217,16 @@ export function AppointmentCard({
       </CardContent>
     </Card>
   );
+
+  if (href && !onStatusChange) {
+    return (
+      <Link href={href} className="block transition hover:scale-[0.995]">
+        {content}
+      </Link>
+    );
+  }
+
+  return content;
 }
 
 export function PetProfileCard({ pet, owner }: { pet: Pet; owner?: Customer }) {

@@ -60,10 +60,34 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardCard title="Today's Appointments" value={String(todayAppointments.length)} hint="Mixed grooming flow across the day" icon={uiIcons.appointments} />
-        <DashboardCard title="Boarding Occupancy" value={`${currentBoarding.length}/${workspace.organization.boardingCapacity}`} hint="Pets currently checked in" icon={uiIcons.pets} />
-        <DashboardCard title="Missed Calls" value={String(workspace.missedCalls.length)} hint="Needs attention from AI rescue" icon={uiIcons.missedCalls} />
-        <DashboardCard title="Unread Messages" value={String(unreadMessages.length)} hint="Unified inbox waiting on follow-up" icon={uiIcons.messages} />
+        <DashboardCard
+          title="Today's Appointments"
+          value={String(todayAppointments.length)}
+          hint="Mixed grooming flow across the day"
+          icon={uiIcons.appointments}
+          href={`/calendar?view=day&date=${today}`}
+        />
+        <DashboardCard
+          title="Boarding Occupancy"
+          value={`${currentBoarding.length}/${workspace.organization.boardingCapacity}`}
+          hint="Pets currently checked in"
+          icon={uiIcons.pets}
+          href="/boarding"
+        />
+        <DashboardCard
+          title="Missed Calls"
+          value={String(workspace.missedCalls.length)}
+          hint="Needs attention from AI rescue"
+          icon={uiIcons.missedCalls}
+          href="/ai-receptionist"
+        />
+        <DashboardCard
+          title="Unread Messages"
+          value={String(unreadMessages.length)}
+          hint="Unified inbox waiting on follow-up"
+          icon={uiIcons.messages}
+          href="/messages"
+        />
       </div>
 
       {workspace.organization.workspaceMode === "demo" ? (
@@ -114,11 +138,13 @@ export default function DashboardPage() {
                 const customer = workspace.customers.find((item) => item.id === appointment.customerId);
                 return (
                   <div key={appointment.id} className="flex items-center justify-between rounded-[24px] bg-zinc-50 p-4">
-                    <div>
-                      <p className="font-medium text-zinc-900">{appointment.startTime} · {pet?.name}</p>
-                      <p className="text-sm text-zinc-500">{customer?.name}</p>
-                    </div>
-                    <StatusBadge status={appointment.status} />
+                    <Link href={`/appointments/${appointment.id}`} className="flex min-w-0 flex-1 items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-zinc-900">{appointment.startTime} · {pet?.name}</p>
+                        <p className="text-sm text-zinc-500">{customer?.name}</p>
+                      </div>
+                      <StatusBadge status={appointment.status} />
+                    </Link>
                   </div>
                 );
               })

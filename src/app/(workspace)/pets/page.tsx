@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { usePawFlow } from "@/components/pawflow-provider";
@@ -19,16 +20,26 @@ export default function PetsPage() {
     <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
       <div className="grid gap-4">
         {workspace.pets.map((pet) => (
-          <button key={pet.id} className="text-left" onClick={() => setSelectedPetId(pet.id)}>
-            <PetProfileCard pet={pet} owner={workspace.customers.find((customer) => customer.id === pet.customerId)} />
-          </button>
+          <div key={pet.id} className="space-y-2">
+            <button className="block w-full text-left" onClick={() => setSelectedPetId(pet.id)}>
+              <PetProfileCard pet={pet} owner={workspace.customers.find((customer) => customer.id === pet.customerId)} />
+            </button>
+            <Link href={`/pets/${pet.id}`}>
+              <Button variant="outline" className="w-full rounded-full">Open pet detail</Button>
+            </Link>
+          </div>
         ))}
       </div>
       {selectedPet ? (
         <div className="space-y-4">
           <Card className="rounded-[32px] border-white/80 bg-white/90">
             <CardHeader>
-              <CardTitle className="font-heading text-2xl">Grooming Notes for {selectedPet.name}</CardTitle>
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle className="font-heading text-2xl">Grooming Notes for {selectedPet.name}</CardTitle>
+                <Link href={`/pets/${selectedPet.id}`}>
+                  <Button variant="outline" className="rounded-full">Full detail</Button>
+                </Link>
+              </div>
             </CardHeader>
             <CardContent>
               <form

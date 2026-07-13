@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { Upload } from "lucide-react";
 
 import { LogoBadge } from "@/components/logo-badge";
 import { usePawFlow } from "@/components/pawflow-provider";
@@ -13,9 +14,15 @@ import { Textarea } from "@/components/ui/textarea";
 
 export default function PortalPage() {
   const params = useParams<{ businessSlug: string }>();
-  const { workspace, createIntakeRequest, createBoardingRequest, addAiLog, addMessage, runAiTask } = usePawFlow();
+  const { workspace, createIntakeRequest, createBoardingRequest, addAiLog, addMessage, addPayment, runAiTask } = usePawFlow();
   const [loading, setLoading] = useState<"grooming" | "boarding" | null>(null);
+  const [portalMessage, setPortalMessage] = useState("");
+  const [uploadNote, setUploadNote] = useState("");
+  const [depositNote, setDepositNote] = useState("");
   const brand = workspace.organization.brand;
+  const latestAppointment = workspace.appointments[0];
+  const latestPet = workspace.pets[0];
+  const latestCustomer = workspace.customers[0];
 
   return (
     <main
@@ -42,13 +49,30 @@ export default function PortalPage() {
           <p className="mt-3 max-w-3xl text-lg leading-8 text-zinc-600">{brand.portalHeadline}</p>
           <div className="mt-5 flex flex-wrap gap-3 text-sm text-zinc-600">
             {workspace.organization.contactPhone ? (
-              <div className="max-w-full rounded-full bg-white px-4 py-2 shadow-sm break-all">{workspace.organization.contactPhone}</div>
+              <a
+                href={`tel:${workspace.organization.contactPhone}`}
+                className="max-w-full break-all rounded-full bg-white px-4 py-2 shadow-sm"
+              >
+                {workspace.organization.contactPhone}
+              </a>
             ) : null}
             {workspace.organization.contactEmail ? (
-              <div className="max-w-full rounded-full bg-white px-4 py-2 shadow-sm break-all">{workspace.organization.contactEmail}</div>
+              <a
+                href={`mailto:${workspace.organization.contactEmail}`}
+                className="max-w-full break-all rounded-full bg-white px-4 py-2 shadow-sm"
+              >
+                {workspace.organization.contactEmail}
+              </a>
             ) : null}
             {workspace.organization.websiteUrl ? (
-              <div className="max-w-full rounded-full bg-white px-4 py-2 shadow-sm break-all">{workspace.organization.websiteUrl}</div>
+              <a
+                href={workspace.organization.websiteUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="max-w-full break-all rounded-full bg-white px-4 py-2 shadow-sm"
+              >
+                {workspace.organization.websiteUrl}
+              </a>
             ) : null}
           </div>
         </header>
@@ -135,26 +159,87 @@ export default function PortalPage() {
                   ))}
                 </div>
               </div>
-              <Input placeholder="Upload vaccine record placeholder" />
-              <Textarea placeholder="Message the business" id="portal-message" />
+              <label className="flex cursor-pointer items-center gap-3 rounded-[24px] border border-dashed border-zinc-200 bg-zinc-50 px-4 py-4 text-sm text-zinc-700">
+                <Upload className="size-4 text-zinc-500" />
+                <span className="flex-1">Upload vaccine record</span>
+                <Input
+                  type="file"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    setUploadNote(`${file.name} uploaded for review.`);
+                    addMessage({
+                      organizationId: workspace.organization.id,
+                      customerId: latestCustomer?.id,
+                      petId: latestPet?.id,
+                      channel: "portal",
+                      direction: "inbound",
+                      subject: "Vaccine upload",
+                      body: `Customer uploaded vaccine file: ${file.name}`,
+                      sender: "Pet Parent",
+                    });
+                    event.currentTarget.value = "";
+                  }}
+                />
+              </label>
+              {uploadNote ? <p className="text-sm text-emerald-700">{uploadNote}</p> : null}
+              <Textarea
+                placeholder="Message the business"
+                value={portalMessage}
+                onChange={(event) => setPortalMessage(event.target.value)}
+              />
               <div className="flex flex-wrap gap-3">
                 <Button
                   className="rounded-full"
-                  onClick={() =>
+                  onClick={() => {
                     addMessage({
                       organizationId: workspace.organization.id,
+                      customerId: latestCustomer?.id,
+                      petId: latestPet?.id,
                       channel: "portal",
                       direction: "inbound",
                       subject: "Portal message",
-                      body: (document.getElementById("portal-message") as HTMLTextAreaElement)?.value || "Portal message submitted.",
+                      body: portalMessage || "Portal message submitted.",
                       sender: "Pet Parent",
-                    })
-                  }
+                    });
+                    setPortalMessage("");
+                  }}
                 >
                   Send portal message
                 </Button>
-                <Button variant="outline" className="rounded-full">Pay deposit placeholder</Button>
+                <Button
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => {
+                    addPayment({
+                      organizationId: workspace.organization.id,
+                      customerId: latestCustomer?.id || workspace.customers[0]?.id || "",
+                      appointmentId: latestAppointment?.id,
+                      amount: latestAppointment?.deposit || 25,
+                      depositAmount: latestAppointment?.deposit || 25,
+                      status: "paid",
+                      method: "stripe",
+                      dueDate: new Date().toISOString().slice(0, 10),
+                      label: `Portal deposit for ${latestPet?.name || "upcoming visit"}`,
+                    });
+                    addMessage({
+                      organizationId: workspace.organization.id,
+                      customerId: latestCustomer?.id,
+                      petId: latestPet?.id,
+                      channel: "portal",
+                      direction: "outbound",
+                      subject: "Deposit received",
+                      body: `Deposit received for ${latestPet?.name || "your pet"}. Your visit is now marked as confirmed in the demo.`,
+                      sender: brand.businessName,
+                    });
+                    setDepositNote("Deposit captured in the demo payment ledger.");
+                  }}
+                >
+                  Pay deposit
+                </Button>
               </div>
+              {depositNote ? <p className="text-sm text-emerald-700">{depositNote}</p> : null}
               <div className="rounded-[24px] bg-zinc-50 p-4 text-sm text-zinc-600">
                 Status updates arrive here for check-in, in-progress care, ready-for-pickup, and boarding photo notes.
               </div>

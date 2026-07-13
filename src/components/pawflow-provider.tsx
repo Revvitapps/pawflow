@@ -8,10 +8,14 @@ import type {
   Appointment,
   AppointmentStatus,
   BoardingStay,
+  Customer,
   DemoWorkspaceState,
   GroomingNoteInput,
   Message,
   MissedCallPayload,
+  Payment,
+  PaymentStatus,
+  Pet,
   PortalRequestPayload,
   SetupWorkspacePayload,
 } from "@/lib/types";
@@ -108,6 +112,13 @@ type WorkspaceAction =
       type: "update-service";
       payload: { serviceId: string; patch: ServicePatch };
     }
+  | { type: "update-customer"; payload: { customerId: string; patch: Partial<Customer> } }
+  | { type: "update-pet"; payload: { petId: string; patch: Partial<Pet> } }
+  | { type: "update-appointment"; payload: { appointmentId: string; patch: Partial<Appointment> } }
+  | { type: "add-payment"; payload: Payment }
+  | { type: "update-payment"; payload: { paymentId: string; patch: Partial<Payment> } }
+  | { type: "update-payment-status"; payload: { paymentId: string; status: PaymentStatus } }
+  | { type: "update-message"; payload: { messageId: string; patch: Partial<Message> } }
   | { type: "simulate-missed-call"; payload: { input: MissedCallPayload; textBack: string; intent: string } };
 
 function reducer(state: DemoWorkspaceState, action: WorkspaceAction): DemoWorkspaceState {
@@ -380,6 +391,53 @@ function reducer(state: DemoWorkspaceState, action: WorkspaceAction): DemoWorksp
           service.id === action.payload.serviceId ? { ...service, ...action.payload.patch } : service,
         ),
       };
+    case "update-customer":
+      return {
+        ...state,
+        customers: state.customers.map((customer) =>
+          customer.id === action.payload.customerId ? { ...customer, ...action.payload.patch } : customer,
+        ),
+      };
+    case "update-pet":
+      return {
+        ...state,
+        pets: state.pets.map((pet) =>
+          pet.id === action.payload.petId ? { ...pet, ...action.payload.patch } : pet,
+        ),
+      };
+    case "update-appointment":
+      return {
+        ...state,
+        appointments: state.appointments.map((appointment) =>
+          appointment.id === action.payload.appointmentId ? { ...appointment, ...action.payload.patch } : appointment,
+        ),
+      };
+    case "add-payment":
+      return {
+        ...state,
+        payments: [action.payload, ...state.payments],
+      };
+    case "update-payment":
+      return {
+        ...state,
+        payments: state.payments.map((payment) =>
+          payment.id === action.payload.paymentId ? { ...payment, ...action.payload.patch } : payment,
+        ),
+      };
+    case "update-payment-status":
+      return {
+        ...state,
+        payments: state.payments.map((payment) =>
+          payment.id === action.payload.paymentId ? { ...payment, status: action.payload.status } : payment,
+        ),
+      };
+    case "update-message":
+      return {
+        ...state,
+        messages: state.messages.map((message) =>
+          message.id === action.payload.messageId ? { ...message, ...action.payload.patch } : message,
+        ),
+      };
     case "simulate-missed-call":
       return {
         ...state,
@@ -423,6 +481,13 @@ type ProviderValue = {
   updateBrandSettings: (payload: Partial<DemoWorkspaceState["organization"]["brand"]>) => void;
   updateBusinessSettings: (payload: BusinessSettingsPatch) => void;
   updateService: (serviceId: string, patch: ServicePatch) => void;
+  updateCustomer: (customerId: string, patch: Partial<Customer>) => void;
+  updatePet: (petId: string, patch: Partial<Pet>) => void;
+  updateAppointment: (appointmentId: string, patch: Partial<Appointment>) => void;
+  addPayment: (payment: Omit<Payment, "id">) => void;
+  updatePayment: (paymentId: string, patch: Partial<Payment>) => void;
+  updatePaymentStatus: (paymentId: string, status: PaymentStatus) => void;
+  updateMessage: (messageId: string, patch: Partial<Message>) => void;
   simulateMissedCall: (input: MissedCallPayload, textBack: string, intent: string) => void;
   runAiTask: <T>(task: string, payload: T) => Promise<string>;
   hydrated: boolean;
@@ -589,6 +654,33 @@ export function PawFlowProvider({ children }: { children: React.ReactNode }) {
       },
       updateService(serviceId, patch) {
         dispatch({ type: "update-service", payload: { serviceId, patch } });
+      },
+      updateCustomer(customerId, patch) {
+        dispatch({ type: "update-customer", payload: { customerId, patch } });
+      },
+      updatePet(petId, patch) {
+        dispatch({ type: "update-pet", payload: { petId, patch } });
+      },
+      updateAppointment(appointmentId, patch) {
+        dispatch({ type: "update-appointment", payload: { appointmentId, patch } });
+      },
+      addPayment(payment) {
+        dispatch({
+          type: "add-payment",
+          payload: {
+            ...payment,
+            id: crypto.randomUUID(),
+          },
+        });
+      },
+      updatePayment(paymentId, patch) {
+        dispatch({ type: "update-payment", payload: { paymentId, patch } });
+      },
+      updatePaymentStatus(paymentId, status) {
+        dispatch({ type: "update-payment-status", payload: { paymentId, status } });
+      },
+      updateMessage(messageId, patch) {
+        dispatch({ type: "update-message", payload: { messageId, patch } });
       },
       simulateMissedCall(input, textBack, intent) {
         dispatch({ type: "simulate-missed-call", payload: { input, textBack, intent } });

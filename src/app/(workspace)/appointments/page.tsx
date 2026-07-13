@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { usePawFlow } from "@/components/pawflow-provider";
@@ -45,15 +46,19 @@ export default function AppointmentsPage() {
         </CardHeader>
         <CardContent className="grid gap-4">
           {workspace.appointments.map((appointment) => (
-            <AppointmentCard
-              key={appointment.id}
-              appointment={appointment}
-              pet={workspace.pets.find((pet) => pet.id === appointment.petId)}
-              customer={workspace.customers.find((customer) => customer.id === appointment.customerId)}
-              serviceLabel={workspace.services.find((service) => service.id === appointment.serviceId)?.name || "Service"}
-              staffName={workspace.staff.find((staff) => staff.id === appointment.staffId)?.name || "Staff"}
-              onStatusChange={(status) => void handleStatusChange(appointment.id, status)}
-            />
+            <div key={appointment.id} className="space-y-2">
+              <AppointmentCard
+                appointment={appointment}
+                pet={workspace.pets.find((pet) => pet.id === appointment.petId)}
+                customer={workspace.customers.find((customer) => customer.id === appointment.customerId)}
+                serviceLabel={workspace.services.find((service) => service.id === appointment.serviceId)?.name || "Service"}
+                staffName={workspace.staff.find((staff) => staff.id === appointment.staffId)?.name || "Staff"}
+                onStatusChange={(status) => void handleStatusChange(appointment.id, status)}
+              />
+              <Link href={`/appointments/${appointment.id}`}>
+                <Button variant="outline" className="w-full rounded-full">Open appointment detail</Button>
+              </Link>
+            </div>
           ))}
           {busyId ? <p className="text-sm text-zinc-500">Generating ready-for-pickup message...</p> : null}
         </CardContent>

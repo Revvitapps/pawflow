@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { usePawFlow } from "@/components/pawflow-provider";
@@ -26,22 +27,32 @@ export default function BoardingPage() {
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <div className="grid gap-4">
           {workspace.boardingStays.map((stay) => (
-            <button key={stay.id} className="text-left" onClick={() => setSelectedStayId(stay.id)}>
-              <BoardingStayCard
-                stay={stay}
-                pet={workspace.pets.find((pet) => pet.id === stay.petId)}
-                customer={workspace.customers.find((customer) => customer.id === stay.customerId)}
-                onAssignRoom={(room) => assignBoardingRoom(stay.id, room)}
-                onCheckOut={() => void checkoutBoardingStay(stay.id)}
-              />
-            </button>
+            <div key={stay.id} className="space-y-2">
+              <button className="block w-full text-left" onClick={() => setSelectedStayId(stay.id)}>
+                <BoardingStayCard
+                  stay={stay}
+                  pet={workspace.pets.find((pet) => pet.id === stay.petId)}
+                  customer={workspace.customers.find((customer) => customer.id === stay.customerId)}
+                  onAssignRoom={(room) => assignBoardingRoom(stay.id, room)}
+                  onCheckOut={() => void checkoutBoardingStay(stay.id)}
+                />
+              </button>
+              <Link href={`/boarding/${stay.id}`}>
+                <Button variant="outline" className="w-full rounded-full">Open stay detail</Button>
+              </Link>
+            </div>
           ))}
         </div>
 
         {selectedStay ? (
           <Card className="rounded-[32px] border-white/80 bg-white/90">
             <CardHeader>
-              <CardTitle className="font-heading text-2xl">Boarding manager</CardTitle>
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle className="font-heading text-2xl">Boarding manager</CardTitle>
+                <Link href={`/boarding/${selectedStay.id}`}>
+                  <Button variant="outline" className="rounded-full">Full detail</Button>
+                </Link>
+              </div>
             </CardHeader>
             <CardContent>
               <form

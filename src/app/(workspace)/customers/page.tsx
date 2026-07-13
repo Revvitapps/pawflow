@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { usePawFlow } from "@/components/pawflow-provider";
 import { CustomerCard, EmptyState, MessageThread, PetProfileCard } from "@/components/pawflow-ui";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
@@ -31,9 +33,14 @@ export default function CustomersPage() {
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search customers, emails, phones..." />
             <div className="grid gap-4">
               {filteredCustomers.map((customer) => (
-                <button key={customer.id} className="text-left" onClick={() => setSelectedCustomerId(customer.id)}>
-                  <CustomerCard customer={customer} petCount={workspace.pets.filter((pet) => pet.customerId === customer.id).length} />
-                </button>
+                <div key={customer.id} className="space-y-2">
+                  <button className="block w-full text-left" onClick={() => setSelectedCustomerId(customer.id)}>
+                    <CustomerCard customer={customer} petCount={workspace.pets.filter((pet) => pet.customerId === customer.id).length} />
+                  </button>
+                  <Link href={`/customers/${customer.id}`}>
+                    <Button variant="outline" className="w-full rounded-full">Open customer detail</Button>
+                  </Link>
+                </div>
               ))}
             </div>
           </CardContent>
@@ -45,7 +52,12 @@ export default function CustomersPage() {
           <>
             <Card className="rounded-[32px] border-white/80 bg-white/90">
               <CardHeader>
-                <CardTitle className="font-heading text-2xl">{selectedCustomer.name}</CardTitle>
+                <div className="flex items-center justify-between gap-3">
+                  <CardTitle className="font-heading text-2xl">{selectedCustomer.name}</CardTitle>
+                  <Link href={`/customers/${selectedCustomer.id}`}>
+                    <Button variant="outline" className="rounded-full">Full detail</Button>
+                  </Link>
+                </div>
               </CardHeader>
               <CardContent className="grid gap-4 sm:grid-cols-3">
                 <div className="rounded-[24px] bg-zinc-50 p-4">

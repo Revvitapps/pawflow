@@ -123,6 +123,11 @@ export function handleTurn(context: ReceptionistContext, state: CallState, utter
   // Opportunistic slot capture on every turn — callers volunteer info out of order.
   captureSlots(context, next, text);
 
+  const interruption = handleInterruption(context, next, text);
+  if (interruption) {
+    return interruption;
+  }
+
   switch (next.phase) {
     case "intent":
       return intentTurn(context, next, text);
@@ -145,7 +150,9 @@ export function handleTurn(context: ReceptionistContext, state: CallState, utter
 
 function intentTurn(context: ReceptionistContext, state: CallState, text: string): EngineResult {
   const intent = detectIntent(text);
-  state.slots.intent = intent;
+  if (intent !== "pricing" && intent !== "hours" && intent !== "vaccines" && intent !== "unknown") {
+    state.slots.intent = intent;
+  }
 
   switch (intent) {
     case "hours": {
@@ -155,27 +162,15 @@ function intentTurn(context: ReceptionistContext, state: CallState, text: string
       return stay(state, `${hours}. Is there anything else I can help with — maybe booking an appointment?`);
     }
     case "vaccines": {
-      const required = vaccineRequirementsFor("boarding", context.organization.vaccineRequirements);
+      const category = requestedServiceFromText(text) ?? "boarding";
+      const required = vaccineRequirementsFor(category, context.organization.vaccineRequirements);
       return stay(
         state,
-        `For boarding and daycare we require ${listWords(required)}, all current. For grooming we just need a current rabies vaccine. You can send records by text or upload them in our pet parent portal. Would you like to book something?`,
+        `${vaccineExplanation(category, required)} Would you like to book something?`,
       );
     }
     case "pricing": {
-      const breed = state.slots.breed ? matchBreed(state.slots.breed) : matchBreed(text);
-      const groom = findService(context, "grooming");
-      if (breed && groom) {
-        const est = estimatePrice(groom.price, groom.durationMinutes, breed.profile);
-        state.phase = "pet_details";
-        return stay(
-          state,
-          `For a ${breed.breed}, a ${groom.name.toLowerCase()} usually runs $${est.low} to $${est.high} and takes about ${formatDuration(est.minutes)}${est.coatNote ? ` — ${est.coatNote}` : ""}. Final pricing is confirmed at check-in based on coat condition. Want me to get that booked? If so, what's your pup's name?`,
-        );
-      }
-      return stay(
-        state,
-        `Happy to help with pricing! It depends on your dog's size and coat — what breed is your pup? For reference, our ${groom ? groom.name.toLowerCase() : "full groom"} starts at $${groom ? groom.price : 95} for a medium, smooth-coated dog.`,
-      );
+      return pricingTurn(context, state, text);
     }
     case "reschedule":
       return escalate(context, state, `Caller wants to change an existing appointment: "${text}"`);
@@ -209,6 +204,65 @@ function intentTurn(context: ReceptionistContext, state: CallState, text: string
         `I can help you book grooming, boarding, or daycare, or answer questions about pricing, hours, and vaccine requirements. Which would you like?`,
       );
   }
+}
+
+function handleInterruption(context: ReceptionistContext, state: CallState, text: string): EngineResult | null {
+  if (state.phase === "intent") return null;
+
+  const intent = detectIntent(text);
+  if (!["vaccines", "hours", "pricing"].includes(intent)) return null;
+
+  if (intent === "vaccines") {
+    const category = requestedServiceFromText(text) ?? serviceCategory(state.slots.intent);
+    const required = vaccineRequirementsFor(category, context.organization.vaccineRequirements);
+    return stay(
+      state,
+      `${vaccineExplanation(category, required)} ${resumePromptForPhase(context, state)}`,
+    );
+  }
+
+  if (intent === "hours") {
+    const hours = context.organization.hours.length
+      ? context.organization.hours.join(". ")
+      : "We're open weekdays 8 to 6 and Saturdays 9 to 4";
+    return stay(state, `${hours}. ${resumePromptForPhase(context, state)}`);
+  }
+
+  if (intent === "pricing" && state.slots.intent === "grooming" && state.slots.breed) {
+    return stay(state, `${pricingReply(context, state, text)} ${resumePromptForPhase(context, state)}`);
+  }
+
+  if (intent === "pricing" && state.slots.intent !== "unknown") {
+    return stay(state, `${pricingReply(context, state, text)} ${resumePromptForPhase(context, state)}`);
+  }
+
+  return null;
+}
+
+function pricingTurn(context: ReceptionistContext, state: CallState, text: string): EngineResult {
+  const category = requestedServiceFromText(text) ?? (state.slots.intent !== "unknown" ? serviceCategory(state.slots.intent) : "grooming");
+  if (category !== "grooming") {
+    state.slots.intent = category;
+    return stay(
+      state,
+      `${pricingReply(context, state, text)} Would you like me to help book ${category} for you?`,
+    );
+  }
+
+  const breed = state.slots.breed ? matchBreed(state.slots.breed) : matchBreed(text);
+  const groom = findService(context, "grooming");
+  if (breed && groom) {
+    state.phase = "pet_details";
+    state.slots.intent = "grooming";
+    return stay(
+      state,
+      `${pricingReply(context, { ...state, slots: { ...state.slots, breed: breed.breed, intent: "grooming" } }, text)} Want me to get that booked? If so, what's your pup's name?`,
+    );
+  }
+  return stay(
+    state,
+    `Happy to help with grooming pricing. It depends on your dog's size and coat. What breed is your pup? For reference, our ${groom ? groom.name.toLowerCase() : "full groom"} starts at $${groom ? groom.price : 95} for a medium, smooth-coated dog.`,
+  );
 }
 
 function petDetailsTurn(context: ReceptionistContext, state: CallState, text: string): EngineResult {
@@ -253,8 +307,47 @@ function schedulingTurn(context: ReceptionistContext, state: CallState, text: st
 }
 
 function vaccinesTurn(context: ReceptionistContext, state: CallState, text: string): EngineResult {
+  const correctedSlot = pickOfferedSlot(text, state.slots.offeredSlots ?? [], false);
+  if (correctedSlot) {
+    state.slots.chosenSlot = correctedSlot;
+    const required = vaccineRequirementsFor(serviceCategory(state.slots.intent), context.organization.vaccineRequirements);
+    return stay(
+      state,
+      `Absolutely — I updated that to ${correctedSlot.label}. One last thing — ${serviceCategory(state.slots.intent) === "grooming" ? `is ${state.slots.petName}'s rabies vaccine current?` : `we require ${listWords(required)} for ${state.slots.intent}. Are those all current for ${state.slots.petName}?`}`,
+    );
+  }
+
+  const lower = text.toLowerCase();
+  if (/\b(do you|can you|are you able|ability|give|administer|do that there|provide|offer)\b/.test(lower) && /\b(vaccine|vaccines|shot|shots|rabies|bordetella|dhpp|influenza)\b/.test(lower)) {
+    const category = serviceCategory(state.slots.intent);
+    const required = vaccineRequirementsFor(category, context.organization.vaccineRequirements);
+    return stay(
+      state,
+      `We don't administer vaccines here, so those would need to come from your veterinarian before ${category}. We require ${listWords(required)} on file first. If any are missing, we can still hold the request, but the visit can't be confirmed until records are current. Are those current for ${state.slots.petName}?`,
+    );
+  }
+
+  if (/\b(if|what if|dont|don't|doesnt|doesn't|missing|expired|overdue|not current|not up to date)\b/.test(lower) && /\b(vaccine|vaccines|shot|shots|rabies|bordetella|dhpp|influenza|one of those)\b/.test(lower)) {
+    const category = serviceCategory(state.slots.intent);
+    const required = vaccineRequirementsFor(category, context.organization.vaccineRequirements);
+    return stay(
+      state,
+      `If one of those is missing or expired, we can note the request but we can't finalize ${category} until ${listWords(required)} are current. Once your vet updates them, you can text us the records or upload them in the portal. Are those current right now for ${state.slots.petName}?`,
+    );
+  }
+
+  if (/\b(nail trim|nails|nail trimming|trim nails)\b/.test(lower)) {
+    return stay(
+      state,
+      `Yes, we can usually add a nail trim during a grooming visit, and in some cases we can note it as an add-on request with boarding depending on staff availability. Back to this booking — are those vaccines current for ${state.slots.petName}?`,
+    );
+  }
+
   const yes = /\b(yes|yeah|yep|current|up to date|they are|all set|sure)\b/i.test(text);
   const no = /\b(no|not|expired|overdue|don't|dont|unsure|think so)\b/i.test(text);
+  if (!yes && !no) {
+    return stay(state, `I just need a quick yes or no on vaccines, or tell me if you want a different time slot.`);
+  }
   state.slots.vaccineConfirmed = yes && !no;
   if (!state.slots.vaccineConfirmed) {
     state.slots.notes.push("Vaccine records need verification before the visit.");
@@ -344,11 +437,11 @@ export function detectIntent(text: string): CallIntent {
   const lower = text.toLowerCase();
   if (/\b(reschedule|change (my|our|the) appointment|move (my|our|the)|cancel (my|our|the))\b/.test(lower)) return "reschedule";
   if (/\b(human|person|manager|someone|front desk|real)\b/.test(lower)) return "human";
+  if (/\b(vaccine|vaccines|vaccination|vaccinations|shot record|shot records|rabies|bordetella)\b/.test(lower)) return "vaccines";
+  if (/\b(price|prices|pricing|cost|costs|how much|rate|rates|charge|charges)\b/.test(lower)) return "pricing";
+  if (/\b(hour|open|close|when are you|what time)\b/.test(lower)) return "hours";
   if (/\b(board|boarding|overnight|stay|kennel|out of town|vacation|weekend away)\b/.test(lower)) return "boarding";
   if (/\b(daycare|day care|drop off for the day|socializ)\b/.test(lower)) return "daycare";
-  if (/\b(price|pricing|cost|how much|rate|charge)\b/.test(lower)) return "pricing";
-  if (/\b(hour|open|close|when are you|what time)\b/.test(lower)) return "hours";
-  if (/\b(vaccine|vaccin|shot record|rabies|bordetella)\b/.test(lower)) return "vaccines";
   if (/\b(groom|grooming|haircut|hair cut|trim|bath|nail|deshed|de-shed)\b/.test(lower)) return "grooming";
   if (/\b(book|appointment|schedule|come in|availability|available|opening)\b/.test(lower)) return "grooming";
   return "unknown";
@@ -366,6 +459,9 @@ function captureSlots(context: ReceptionistContext, state: CallState, text: stri
     if (!state.slots.petName && state.slots.breed) {
       state.slots.petName = guessPetName(text);
     }
+    if (!state.slots.petName && state.phase === "pet_details") {
+      state.slots.petName = guessPetName(text);
+    }
   }
   if (!state.slots.customerName) {
     const named = /(?:this is|my name is|i'm|i am)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\b/.exec(text);
@@ -377,10 +473,37 @@ function guessPetName(text: string): string | undefined {
   const capitalized = text.match(/\b[A-Z][a-z]{2,12}\b/g) ?? [];
   const stopwords = new Set(["The", "Yes", "She", "His", "Her", "They", "And", "But", "For", "Its", "Our", "What", "That", "This", "Can", "How"]);
   const candidate = capitalized.find((word) => !stopwords.has(word) && !matchBreed(word));
-  return candidate;
+  if (candidate) return candidate;
+
+  const normalized = text.trim().toLowerCase().replace(/[^a-z\s]/g, "");
+  if (!normalized.includes(" ")) {
+    const lowerStopwords = new Set([
+      "yes",
+      "no",
+      "yeah",
+      "yep",
+      "sure",
+      "okay",
+      "grooming",
+      "boarding",
+      "daycare",
+      "vaccines",
+      "vaccine",
+      "rabies",
+      "bordetella",
+      "price",
+      "pricing",
+      "hours",
+    ]);
+    if (normalized.length >= 2 && normalized.length <= 12 && !lowerStopwords.has(normalized) && !matchBreed(normalized)) {
+      return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+    }
+  }
+
+  return undefined;
 }
 
-function pickOfferedSlot(text: string, offers: SlotOffer[]): SlotOffer | undefined {
+function pickOfferedSlot(text: string, offers: SlotOffer[], allowAffirmativeDefault = true): SlotOffer | undefined {
   const lower = text.toLowerCase();
   const ordinals = [
     /(first|option (one|1)\b|number (one|1)\b|1st)/,
@@ -390,14 +513,25 @@ function pickOfferedSlot(text: string, offers: SlotOffer[]): SlotOffer | undefin
   for (let i = 0; i < offers.length; i++) {
     if (ordinals[i] && ordinals[i].test(lower)) return offers[i];
   }
+
+  const requestedTime = parseRequestedTime(lower);
+  if (requestedTime) {
+    const exact = offers.find((offer) => offer.startTime === requestedTime);
+    if (exact) return exact;
+  }
+
+  const matchingDays = offers.filter((offer) => lower.includes(dayName(offer.date).toLowerCase()));
+  if (matchingDays.length === 1) {
+    return matchingDays[0];
+  }
+
   for (const offer of offers) {
-    const day = dayName(offer.date).toLowerCase();
     const hour = offer.startTime.replace(/^0/, "").split(":")[0];
-    if (lower.includes(day) || lower.includes(`${hour} `) || lower.includes(`${hour}:`) || lower.includes(`at ${hour}`)) {
+    if (lower.includes(`${hour}:`) || lower.includes(`at ${hour}`)) {
       return offer;
     }
   }
-  if (/\b(yes|sure|that works|sounds good|perfect|okay|ok)\b/.test(lower) && offers.length > 0) {
+  if (allowAffirmativeDefault && /\b(yes|sure|that works|sounds good|perfect|okay|ok)\b/.test(lower) && offers.length > 0) {
     return offers[0];
   }
   return undefined;
@@ -488,6 +622,70 @@ function serviceCategory(intent: CallIntent): "grooming" | "boarding" | "daycare
   return intent === "boarding" ? "boarding" : intent === "daycare" ? "daycare" : "grooming";
 }
 
+function requestedServiceFromText(text: string): "grooming" | "boarding" | "daycare" | undefined {
+  const lower = text.toLowerCase();
+  if (/\b(board|boarding|overnight|stay|kennel)\b/.test(lower)) return "boarding";
+  if (/\b(daycare|day care|drop off for the day|socializ)\b/.test(lower)) return "daycare";
+  if (/\b(groom|grooming|haircut|trim|bath|nail|deshed|de-shed)\b/.test(lower)) return "grooming";
+  return undefined;
+}
+
+function vaccineExplanation(category: "grooming" | "boarding" | "daycare", required: string[]): string {
+  if (category === "grooming") {
+    return "For grooming, we can take care of the service here, but any vaccines would need to be handled by your veterinarian.";
+  }
+  return `For ${category}, we require ${listWords(required)} to be current, and any vaccines would need to be done at your veterinarian. You can send records by text or upload them in our pet parent portal.`;
+}
+
+function pricingReply(context: ReceptionistContext, state: CallState, text: string): string {
+  const category = requestedServiceFromText(text) ?? (state.slots.intent !== "unknown" ? serviceCategory(state.slots.intent) : "grooming");
+
+  if (category === "daycare") {
+    const daycare = findService(context, "daycare");
+    return `Our daycare rate starts at $${daycare ? daycare.price : 35} per day. Final fit depends on your dog's temperament, vaccine records, and whether you want any add-ons.`;
+  }
+
+  if (category === "boarding") {
+    const boarding = findService(context, "boarding");
+    return `Our boarding rate starts at $${boarding ? boarding.price : 70} per night. Final pricing can change based on holiday dates, medication needs, and any extras you want added.`;
+  }
+
+  const breed = state.slots.breed ? matchBreed(state.slots.breed) : matchBreed(text);
+  const groom = findService(context, "grooming");
+  if (breed && groom) {
+    const est = estimatePrice(groom.price, groom.durationMinutes, breed.profile);
+    return `For a ${breed.breed}, a ${groom.name.toLowerCase()} usually runs $${est.low} to $${est.high} and takes about ${formatDuration(est.minutes)}${est.coatNote ? ` — ${est.coatNote}` : ""}. Final pricing is confirmed at check-in based on coat condition.`;
+  }
+
+  return `Our ${groom ? groom.name.toLowerCase() : "full groom"} starts at $${groom ? groom.price : 95}, and the exact price depends on size, coat, and condition.`;
+}
+
+function resumePromptForPhase(context: ReceptionistContext, state: CallState): string {
+  switch (state.phase) {
+    case "pet_details":
+      return state.slots.petName
+        ? `Now, what breed is ${state.slots.petName}?`
+        : "Now, what's your pup's name and breed?";
+    case "scheduling": {
+      const offers = state.slots.offeredSlots ?? [];
+      if (offers.length === 0) return "Would you like me to look for appointment times?";
+      const listed = offers.map((offer, index) => `option ${index + 1}: ${offer.label}`).join(", ");
+      return `To keep booking, I still have ${listed}. Which works best?`;
+    }
+    case "vaccines": {
+      const category = serviceCategory(state.slots.intent);
+      const required = vaccineRequirementsFor(category, context.organization.vaccineRequirements);
+      return category === "grooming"
+        ? `Back to booking — is ${state.slots.petName}'s rabies vaccine current?`
+        : `Back to booking — are ${state.slots.petName}'s ${listWords(required)} all current?`;
+    }
+    case "confirm":
+      return "Back to booking — should I go ahead and lock that in?";
+    default:
+      return "Would you like to keep going with the booking?";
+  }
+}
+
 function smsConfirmation(context: ReceptionistContext, state: CallState): string {
   const slot = state.slots.chosenSlot;
   const vaccineLine = state.slots.vaccineConfirmed
@@ -522,6 +720,25 @@ function friendlyTime(time: string): string {
   const suffix = h >= 12 ? "PM" : "AM";
   const hour = h % 12 === 0 ? 12 : h % 12;
   return m === 0 ? `${hour} ${suffix}` : `${hour}:${String(m).padStart(2, "0")} ${suffix}`;
+}
+
+function parseRequestedTime(text: string): string | undefined {
+  const meridiemMatch = /\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/.exec(text);
+  if (meridiemMatch) {
+    let hour = Number(meridiemMatch[1]);
+    const minute = meridiemMatch[2] ? Number(meridiemMatch[2]) : 0;
+    const meridiem = meridiemMatch[3];
+    if (meridiem === "pm" && hour !== 12) hour += 12;
+    if (meridiem === "am" && hour === 12) hour = 0;
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  }
+
+  const simpleTime = /\b(\d{1,2}):(\d{2})\b/.exec(text);
+  if (simpleTime) {
+    return `${String(Number(simpleTime[1])).padStart(2, "0")}:${simpleTime[2]}`;
+  }
+
+  return undefined;
 }
 
 function addMinutes(time: string, minutes: number): string {

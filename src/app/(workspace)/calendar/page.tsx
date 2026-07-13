@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import {
   addDays,
@@ -32,11 +33,19 @@ type CalendarView = "day" | "week" | "month";
 
 export default function CalendarPage() {
   const { workspace, createAppointment } = usePawFlow();
-  const [view, setView] = useState<CalendarView>("day");
+  const params =
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const initialView = params?.get("view");
+  const initialDate = params?.get("date");
+  const [view, setView] = useState<CalendarView>(
+    initialView === "day" || initialView === "week" || initialView === "month" ? initialView : "day",
+  );
   const [staffFilter, setStaffFilter] = useState("all");
   const [serviceFilter, setServiceFilter] = useState("all");
   const [open, setOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(
+    initialDate ? new Date(`${initialDate}T12:00:00`) : new Date(),
+  );
   const today = format(selectedDate, "yyyy-MM-dd");
 
   const filteredAppointments = workspace.appointments.filter(
@@ -203,6 +212,7 @@ export default function CalendarPage() {
                 customer={workspace.customers.find((customer) => customer.id === appointment.customerId)}
                 serviceLabel={workspace.services.find((service) => service.id === appointment.serviceId)?.name || "Service"}
                 staffName={workspace.staff.find((staff) => staff.id === appointment.staffId)?.name || "Staff"}
+                href={`/appointments/${appointment.id}`}
               />
             ))
           ) : (
@@ -234,11 +244,13 @@ export default function CalendarPage() {
                         const pet = workspace.pets.find((item) => item.id === appointment.petId);
                         return (
                           <div key={appointment.id} className="rounded-[18px] bg-white p-3 shadow-sm">
-                            <p className="text-sm font-semibold text-zinc-900">{appointment.startTime}</p>
-                            <p className="mt-1 text-sm text-zinc-700">{pet?.name}</p>
-                            <div className="mt-2">
-                              <StatusBadge status={appointment.status} />
-                            </div>
+                            <Link href={`/appointments/${appointment.id}`} className="block">
+                              <p className="text-sm font-semibold text-zinc-900">{appointment.startTime}</p>
+                              <p className="mt-1 text-sm text-zinc-700">{pet?.name}</p>
+                              <div className="mt-2">
+                                <StatusBadge status={appointment.status} />
+                              </div>
+                            </Link>
                           </div>
                         );
                       })
@@ -292,10 +304,14 @@ export default function CalendarPage() {
                       {appointments.slice(0, 3).map((appointment) => {
                         const pet = workspace.pets.find((item) => item.id === appointment.petId);
                         return (
-                          <div key={appointment.id} className="rounded-[16px] bg-[#fff6ef] px-2 py-2 text-xs text-zinc-700">
+                          <Link
+                            key={appointment.id}
+                            href={`/appointments/${appointment.id}`}
+                            className="block rounded-[16px] bg-[#fff6ef] px-2 py-2 text-xs text-zinc-700"
+                          >
                             <div className="font-semibold">{appointment.startTime}</div>
                             <div>{pet?.name}</div>
-                          </div>
+                          </Link>
                         );
                       })}
                       {appointments.length > 3 ? (
@@ -326,6 +342,7 @@ export default function CalendarPage() {
                   customer={workspace.customers.find((customer) => customer.id === appointment.customerId)}
                   serviceLabel={workspace.services.find((service) => service.id === appointment.serviceId)?.name || "Service"}
                   staffName={workspace.staff.find((staff) => staff.id === appointment.staffId)?.name || "Staff"}
+                  href={`/appointments/${appointment.id}`}
                 />
               ))}
             {!filteredAppointments.some((appointment) => appointment.date === format(selectedDate, "yyyy-MM-dd")) ? (

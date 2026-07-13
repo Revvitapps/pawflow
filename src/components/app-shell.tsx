@@ -113,9 +113,11 @@ export function AppShell({
                     <ArrowRight className="size-4" />
                   </Button>
                 </Link>
-                <Button variant="outline" size="icon" className="rounded-full">
-                  <Bell className="size-4" />
-                </Button>
+                <Link href="/messages">
+                  <Button variant="outline" size="icon" className="rounded-full">
+                    <Bell className="size-4" />
+                  </Button>
+                </Link>
                 <Button variant="outline" size="icon" className="rounded-full" onClick={resetWorkspace}>
                   <RotateCcw className="size-4" />
                 </Button>

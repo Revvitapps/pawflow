@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { usePawFlow } from "@/components/pawflow-provider";
@@ -26,7 +27,12 @@ export default function MessagesPage() {
     <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
       <div className="space-y-4">
         {workspace.messages.map((message) => (
-          <MessageThread key={message.id} message={message} />
+          <div key={message.id} className="space-y-2">
+            <MessageThread message={message} />
+            <Link href={`/messages/${message.id}`}>
+              <Button variant="outline" className="w-full rounded-full">Open message detail</Button>
+            </Link>
+          </div>
         ))}
       </div>
       <div className="space-y-4">
