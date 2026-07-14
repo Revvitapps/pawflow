@@ -100,23 +100,22 @@ export default function SetupPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#e8f7f4_0%,#fff7ef_45%,#ffffff_100%)] px-0 py-0 md:px-6 md:py-8">
-      <div className="mx-auto w-full max-w-[460px] space-y-6 overflow-hidden border border-white/80 bg-[rgba(255,250,247,0.94)] px-4 py-8 shadow-[0_28px_120px_rgba(61,58,57,0.14)] backdrop-blur-xl md:rounded-[40px]">
-        <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.32em] text-zinc-400">Start Here</p>
-            <h1 className="mt-2 font-heading text-4xl font-semibold text-zinc-900 sm:text-5xl">Set up your own grooming business</h1>
-            <p className="mt-3 max-w-3xl text-lg text-zinc-600">
-              Build your branded workspace, add services and staff, and get your customer-facing portal ready to share.
-            </p>
-          </div>
-          <Button variant="outline" className="rounded-full" onClick={() => router.push("/login")}>
-            <ArrowLeft className="size-4" />
-            Back
-          </Button>
+    <main className="h-full space-y-6 overflow-y-auto bg-[radial-gradient(circle_at_top,#e8f7f4_0%,#fff7ef_45%,#ffffff_100%)] px-4 py-8">
+      <div className="flex flex-col items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.32em] text-zinc-400">Start Here</p>
+          <h1 className="mt-2 font-heading text-4xl font-semibold text-zinc-900 sm:text-5xl">Set up your own grooming business</h1>
+          <p className="mt-3 max-w-3xl text-lg text-zinc-600">
+            Build your branded workspace, add services and staff, and get your customer-facing portal ready to share.
+          </p>
         </div>
+        <Button variant="outline" className="rounded-full" onClick={() => router.push("/login")}>
+          <ArrowLeft className="size-4" />
+          Back
+        </Button>
+      </div>
 
-        <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="grid gap-6">
           <Card className="rounded-[32px] border-white/80 bg-white/90">
             <CardHeader>
               <CardTitle className="font-heading text-2xl">Onboarding steps</CardTitle>
@@ -382,7 +381,6 @@ export default function SetupPage() {
             accentColor={form.accentColor}
             poweredByPawFlow
           />
-        </div>
       </div>
     </main>
   );

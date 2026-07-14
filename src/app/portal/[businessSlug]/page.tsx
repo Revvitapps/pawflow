@@ -26,10 +26,9 @@ export default function PortalPage() {
 
   return (
     <main
-      className="min-h-screen px-0 py-0 md:px-6 md:py-8"
+      className="h-full space-y-6 overflow-y-auto px-4 py-8"
       style={{ background: `linear-gradient(180deg, ${brand.secondaryColor} 0%, white 50%, #fffaf7 100%)` }}
     >
-      <div className="mx-auto w-full max-w-[460px] space-y-6 overflow-hidden border border-white/80 bg-[rgba(255,255,255,0.82)] px-4 py-8 shadow-[0_28px_120px_rgba(61,58,57,0.14)] backdrop-blur-xl md:rounded-[40px]">
         <header className="rounded-[36px] border border-white/70 bg-white/85 p-6 shadow-[0_20px_80px_rgba(61,58,57,0.08)]">
           <div className="flex flex-wrap items-center gap-3">
             {brand.logoUrl ? (
@@ -77,7 +76,7 @@ export default function PortalPage() {
           </div>
         </header>
 
-        <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        <div className="grid gap-6">
           <Card className="rounded-[32px] border-white/80 bg-white/90">
             <CardHeader>
               <CardTitle className="font-heading text-2xl">Book an appointment</CardTitle>
@@ -117,7 +116,7 @@ export default function PortalPage() {
           </Card>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        <div className="grid gap-6">
           <Card className="rounded-[32px] border-white/80 bg-white/90">
             <CardHeader>
               <CardTitle className="font-heading text-2xl">Your pets and upcoming visits</CardTitle>
@@ -246,7 +245,6 @@ export default function PortalPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
     </main>
   );
 }

@@ -100,7 +100,7 @@ export function FeedbackPanel() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <button className="fixed right-3 bottom-24 z-50 rounded-full bg-zinc-900 px-4 py-3 text-sm font-semibold text-white shadow-[0_20px_60px_rgba(61,58,57,0.22)] transition hover:bg-zinc-800 md:right-[calc(50%-220px)] md:bottom-28">
+        <button className="fixed right-3 bottom-24 z-50 rounded-full bg-zinc-900 px-4 py-3 text-sm font-semibold text-white shadow-[0_20px_60px_rgba(61,58,57,0.22)] transition hover:bg-zinc-800">
           <span>Prototype Notes</span>
         </button>
       </SheetTrigger>
