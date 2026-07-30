@@ -1,0 +1,422 @@
+// Pawflow data model — the pet-care operating system.
+// Multi-tenant: every domain row carries `businessId` and is only ever read or
+// written through the guarded data layer in src/server/db.ts (never raw Prisma).
+// Money is stored as integer cents (Int). Never use Float for currency.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  owner
+  front_desk
+  staff
+  pet_parent
+}
+
+enum ServiceCategory {
+  grooming
+  boarding
+  daycare
+  add_on
+}
+
+enum AppointmentStatus {
+  requested
+  confirmed
+  checked_in
+  in_progress
+  ready
+  completed
+  cancelled
+  no_show
+}
+
+enum ReservationStatus {
+  requested
+  confirmed
+  checked_in
+  checked_out
+  cancelled
+}
+
+enum ReservationKind {
+  boarding
+  daycare
+}
+
+enum KennelKind {
+  run
+  suite
+  kennel
+  daycare_room
+}
+
+enum InvoiceStatus {
+  draft
+  unpaid
+  partial
+  paid
+  refunded
+  void
+}
+
+enum PaymentMethod {
+  card
+  cash
+  square
+  stripe
+  other
+}
+
+enum NotificationChannel {
+  sms
+  email
+  portal
+  push
+}
+
+enum NotificationType {
+  appointment_reminder
+  vaccine_reminder
+  review_request
+  reactivation
+  boarding_update
+  missed_call_textback
+}
+
+enum NotificationStatus {
+  queued
+  sent
+  failed
+  draft
+}
+
+enum VaccineStatus {
+  current
+  expiring_soon
+  expired
+  missing
+}
+
+// ---------------------------------------------------------------------------
+// Tenant + identity
+// ---------------------------------------------------------------------------
+
+model Business {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  timezone  String   @default("America/New_York")
+  // Brand + policy settings kept as a JSON blob so the existing brand screens
+  // can round-trip without a column-per-field migration in this pass.
+  brand     Json     @default("{}")
+  boardingCapacity Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users         User[]
+  memberships   Membership[]
+  staff         Staff[]
+  services      Service[]
+  clients       Client[]
+  pets          Pet[]
+  vaccineRecords VaccineRecord[]
+  kennels       Kennel[]
+  appointments  Appointment[]
+  reservations  Reservation[]
+  invoices      Invoice[]
+  notifications Notification[]
+  auditEvents   AuditEvent[]
+}
+
+// Auth identity. `businessId` is the user's active/home tenant used to scope the
+// session; `Membership` is the forward-looking primitive that lets one identity
+// belong to several tenants (unification contract). Role is duplicated onto the
+// User for the fast session path and mirrored in Membership.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         UserRole @default(owner)
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships Membership[]
+
+  @@index([businessId])
+}
+
+// User <-> Business join carrying the role in that tenant. Unique per pair.
+model Membership {
+  id         String   @id @default(cuid())
+  userId     String
+  businessId String
+  role       UserRole @default(owner)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, businessId])
+  @@index([businessId])
+}
+
+// ---------------------------------------------------------------------------
+// Operations
+// ---------------------------------------------------------------------------
+
+model Staff {
+  id              String   @id @default(cuid())
+  businessId      String
+  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId          String?
+  name            String
+  roleLabel       String
+  specialty       String   @default("")
+  phone           String   @default("")
+  color           String   @default("#79c6bf")
+  avatar          String   @default("")
+  isAvailableToday Boolean @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  appointments Appointment[]
+
+  @@index([businessId])
+}
+
+model Service {
+  id              String          @id @default(cuid())
+  businessId      String
+  business        Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name            String
+  category        ServiceCategory
+  durationMinutes Int
+  priceCents      Int
+  depositRequired Boolean         @default(false)
+  depositCents    Int             @default(0)
+  description     String          @default("")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  appointments Appointment[]
+
+  @@index([businessId])
+}
+
+// Pet owner.
+model Client {
+  id               String   @id @default(cuid())
+  businessId       String
+  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name             String
+  phone            String   @default("")
+  email            String   @default("")
+  preferredChannel NotificationChannel @default(sms)
+  tags             String[] @default([])
+  notes            String[] @default([])
+  balanceCents     Int      @default(0)
+  lastVisitAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  pets          Pet[]
+  appointments  Appointment[]
+  reservations  Reservation[]
+  invoices      Invoice[]
+  notifications Notification[]
+
+  @@index([businessId])
+}
+
+model Pet {
+  id             String   @id @default(cuid())
+  businessId     String
+  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  clientId       String
+  client         Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name           String
+  breed          String   @default("")
+  age            String   @default("")
+  weight         String   @default("")
+  photoUrl       String?
+  allergies      String[] @default([])
+  cutPreferences String   @default("")
+  boardingNotes  String   @default("")
+  behaviorAlerts Json     @default("[]")
+  groomingNotes  Json     @default("[]")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  appointments   Appointment[]
+  reservations   Reservation[]
+  vaccineRecords VaccineRecord[]
+
+  @@index([businessId])
+  @@index([clientId])
+}
+
+model VaccineRecord {
+  id         String        @id @default(cuid())
+  businessId String
+  business   Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  petId      String
+  pet        Pet           @relation(fields: [petId], references: [id], onDelete: Cascade)
+  name       String
+  expiresAt  DateTime
+  status     VaccineStatus @default(current)
+  uploadedBy String        @default("")
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([businessId])
+  @@index([petId])
+}
+
+// A physical capacity unit: boarding run/suite/kennel or a daycare room.
+model Kennel {
+  id         String     @id @default(cuid())
+  businessId String
+  business   Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  kind       KennelKind @default(run)
+  capacity   Int        @default(1)
+  notes      String     @default("")
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  reservations Reservation[]
+
+  @@index([businessId])
+}
+
+model Appointment {
+  id             String            @id @default(cuid())
+  businessId     String
+  business       Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  clientId       String
+  client         Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  petId          String
+  pet            Pet               @relation(fields: [petId], references: [id], onDelete: Cascade)
+  staffId        String?
+  staff          Staff?            @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  serviceId      String?
+  service        Service?          @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  date           DateTime
+  startTime      String
+  endTime        String
+  priceCents     Int               @default(0)
+  depositCents   Int               @default(0)
+  status         AppointmentStatus @default(requested)
+  notes          String            @default("")
+  noShowRisk     String            @default("low")
+  reminderEnabled Boolean          @default(true)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  invoices Invoice[]
+
+  @@index([businessId])
+  @@index([clientId])
+}
+
+// Boarding / daycare stay. Occupies a Kennel over a date range; the guarded
+// data layer enforces no double-booking of a kennel beyond its capacity.
+model Reservation {
+  id             String            @id @default(cuid())
+  businessId     String
+  business       Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  clientId       String
+  client         Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  petId          String
+  pet            Pet               @relation(fields: [petId], references: [id], onDelete: Cascade)
+  kennelId       String?
+  kennel         Kennel?           @relation(fields: [kennelId], references: [id], onDelete: SetNull)
+  kind           ReservationKind   @default(boarding)
+  startDate      DateTime
+  endDate        DateTime
+  status         ReservationStatus @default(requested)
+  feedingNotes   String            @default("")
+  medicationNotes String           @default("")
+  vaccineOk      Boolean           @default(false)
+  photoUpdates   String[]          @default([])
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  invoices Invoice[]
+
+  @@index([businessId])
+  @@index([kennelId])
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  businessId    String
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  appointmentId String?
+  appointment   Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  reservationId String?
+  reservation   Reservation?  @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  label         String
+  amountCents   Int
+  depositCents  Int           @default(0)
+  status        InvoiceStatus @default(unpaid)
+  method        PaymentMethod @default(card)
+  dueDate       DateTime
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([businessId])
+  @@index([clientId])
+}
+
+// Unifies outbound reminders and message log entries.
+model Notification {
+  id         String             @id @default(cuid())
+  businessId String
+  business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  clientId   String?
+  client     Client?            @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  type       NotificationType
+  channel    NotificationChannel @default(sms)
+  subject    String             @default("")
+  body       String
+  status     NotificationStatus @default(queued)
+  dueAt      DateTime?
+  sentAt     DateTime?
+  aiSuggested Boolean           @default(false)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@index([businessId])
+}
+
+// Append-only audit trail. Scoped by tenant like everything else.
+model AuditEvent {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  @@index([businessId])
+  @@index([createdAt])
+}
