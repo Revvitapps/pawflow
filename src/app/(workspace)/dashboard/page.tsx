@@ -1,201 +1,98 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { CalendarDays, PawPrint, Users, BedDouble } from "lucide-react";
 
-import { usePawFlow } from "@/components/pawflow-provider";
-import type { DemoWorkspaceState } from "@/lib/types";
-import {
-  AIInsightCard,
-  DashboardCard,
-  EmptyState,
-  MiniMetric,
-  QuickActionButton,
-  RevenueSnapshot,
-  StatusBadge,
-  uiIcons,
-} from "@/components/pawflow-ui";
+import { db } from "@/server/db";
+import { requireSession } from "@/lib/session";
+import { getBusinessById } from "@/server/tenant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
-const REBOOKING_CUTOFF_ISO = new Date(Date.now() - 1000 * 60 * 60 * 24 * 42).toISOString().slice(0, 10);
+function money(cents: number) {
+  return `$${(cents / 100).toFixed(2)}`;
+}
 
-export default function DashboardPage() {
-  const { workspace, addAiLog, addMessage, runAiTask } = usePawFlow();
-  const [aiSummary, setAiSummary] = useState("Generating your AI ops brief...");
-  const today = new Date().toISOString().slice(0, 10);
-  const todayAppointments = workspace.appointments.filter((appointment) => appointment.date === today);
-  const currentBoarding = workspace.boardingStays.filter((stay) => stay.status === "checked-in");
-  const unreadMessages = workspace.messages.filter((message) => message.direction === "inbound");
-  const readyPets = workspace.appointments.filter((appointment) => appointment.status === "ready");
-  const vaccineAlerts = workspace.pets.flatMap((pet) =>
-    pet.vaccineRecords
-      .filter((record) => record.status === "expired" || record.status === "expiring-soon")
-      .map((record) => ({ pet, record })),
-  );
-  const paid = workspace.payments.filter((payment) => payment.status === "paid").reduce((sum, payment) => sum + payment.amount, 0);
-  const outstanding = workspace.payments.filter((payment) => payment.status !== "paid").reduce((sum, payment) => sum + payment.amount, 0);
-  const deposits = workspace.payments.reduce((sum, payment) => sum + payment.depositAmount, 0);
+function isSameDay(a: Date, b: Date) {
+  return a.toDateString() === b.toDateString();
+}
 
-  // Run the AI ops brief ONCE per dashboard visit. This previously depended
-  // on `workspace` and logged its own result back into the workspace, which
-  // re-triggered the effect in an infinite loop — each iteration POSTing the
-  // full workspace JSON to /api/ai (the July 7 bandwidth incident).
-  const summaryRequested = useRef(false);
-  useEffect(() => {
-    if (summaryRequested.current) return;
-    summaryRequested.current = true;
-    // Send only the fields summarizeDay actually reads — not the whole workspace.
-    const slimWorkspace = {
-      appointments: workspace.appointments.map(({ date, startTime, status }) => ({ date, startTime, status })),
-      boardingStays: workspace.boardingStays.map(({ status }) => ({ status })),
-      missedCalls: workspace.missedCalls.map(() => ({})),
-    } as unknown as DemoWorkspaceState;
-    runAiTask("summarizeDay", { workspace: slimWorkspace }).then((output) => {
-      setAiSummary(output);
-      addAiLog("summarizeDay", "Dashboard daily summary", output);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+export default async function DashboardPage() {
+  const session = await requireSession();
+  const businessId = session.user.businessId;
+
+  const [business, clients, pets, appointments, reservations, invoices] = await Promise.all([
+    getBusinessById(businessId),
+    db.listClients(businessId),
+    db.listPets(businessId),
+    db.listAppointments(businessId),
+    db.listReservations(businessId),
+    db.listInvoices(businessId),
+  ]);
+
+  const now = new Date();
+  const todaysAppointments = appointments.filter((a) => isSameDay(new Date(a.date), now));
+  const occupancy = reservations.filter((r) => r.status === "checked_in").length;
+  const outstandingCents = invoices
+    .filter((i) => i.status === "unpaid" || i.status === "partial")
+    .reduce((sum, i) => sum + i.amountCents, 0);
+
+  const metrics = [
+    { label: "Appointments today", value: String(todaysAppointments.length), icon: CalendarDays, tone: "bg-[#dff3f0]" },
+    { label: "Clients", value: String(clients.length), icon: Users, tone: "bg-[#eef2ff]" },
+    { label: "Pets", value: String(pets.length), icon: PawPrint, tone: "bg-[#fff1e8]" },
+    { label: "Boarding in-house", value: `${occupancy}/${business?.boardingCapacity ?? 0}`, icon: BedDouble, tone: "bg-[#f4fbfa]" },
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardCard
-          title="Today's Appointments"
-          value={String(todayAppointments.length)}
-          hint="Mixed grooming flow across the day"
-          icon={uiIcons.appointments}
-          href={`/calendar?view=day&date=${today}`}
-        />
-        <DashboardCard
-          title="Boarding Occupancy"
-          value={`${currentBoarding.length}/${workspace.organization.boardingCapacity}`}
-          hint="Pets currently checked in"
-          icon={uiIcons.pets}
-          href="/boarding"
-        />
-        <DashboardCard
-          title="Missed Calls"
-          value={String(workspace.missedCalls.length)}
-          hint="Needs attention from AI rescue"
-          icon={uiIcons.missedCalls}
-          href="/ai-receptionist"
-        />
-        <DashboardCard
-          title="Unread Messages"
-          value={String(unreadMessages.length)}
-          hint="Unified inbox waiting on follow-up"
-          icon={uiIcons.messages}
-          href="/messages"
-        />
+      <div className="grid grid-cols-2 gap-3">
+        {metrics.map((m) => (
+          <div key={m.label} className={`rounded-2xl border border-white/70 p-4 ${m.tone}`}>
+            <m.icon className="size-5 text-zinc-600" />
+            <p className="mt-3 font-heading text-2xl font-semibold text-zinc-900">{m.value}</p>
+            <p className="text-xs font-medium text-zinc-500">{m.label}</p>
+          </div>
+        ))}
       </div>
 
-      {workspace.organization.workspaceMode === "demo" ? (
-        <Card className="rounded-[32px] border-[#dff3f0] bg-[linear-gradient(135deg,#ffffff_0%,#eef7f5_100%)]">
-          <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-zinc-400">Guided Onboarding</p>
-              <h2 className="mt-2 font-heading text-2xl font-semibold text-zinc-900">Start here for a real client setup</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-600">
-                Use the guided setup flow to brand the workspace, enter services and staff, and get the business ready to share with customers.
-              </p>
-            </div>
-            <Link href="/setup">
-              <button className="rounded-full bg-zinc-900 px-5 py-3 text-sm font-semibold text-white">Open setup wizard</button>
-            </Link>
-          </CardContent>
-        </Card>
-      ) : null}
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle>Today&apos;s schedule</CardTitle>
+          <Link href="/appointments" className="text-xs font-semibold uppercase tracking-widest text-[#2f8f86]">
+            All appointments
+          </Link>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {todaysAppointments.length === 0 ? (
+            <p className="text-sm text-zinc-500">No appointments scheduled for today.</p>
+          ) : (
+            todaysAppointments.map((a) => (
+              <div key={a.id} className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white px-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-zinc-900">
+                    {a.pet?.name ?? "Pet"} · {a.client?.name ?? "Client"}
+                  </p>
+                  <p className="text-xs text-zinc-500">
+                    {a.startTime}–{a.endTime} · {a.service?.name ?? "Service"}
+                  </p>
+                </div>
+                <Badge variant="secondary">{a.status.replace("_", " ")}</Badge>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <AIInsightCard title="Today's gentle game plan" body={aiSummary} />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <MiniMetric label="Pets Ready to Wag" value={String(readyPets.length)} colorClassName="bg-emerald-50" />
-          <MiniMetric label="Vaccine Watch" value={String(vaccineAlerts.length)} colorClassName="bg-amber-50" />
-          <MiniMetric label="No-Show Risk" value={String(workspace.appointments.filter((appointment) => appointment.noShowRisk === "high").length)} colorClassName="bg-rose-50" />
-          <MiniMetric label="Rebooking Opportunities" value={String(workspace.pets.filter((pet) => pet.lastVisitAt && pet.lastVisitAt < REBOOKING_CUTOFF_ISO).length)} colorClassName="bg-sky-50" />
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Link href="/appointments"><QuickActionButton label="Create appointment" icon={uiIcons.appointments} /></Link>
-        <Link href="/messages"><QuickActionButton label="Missed Call Rescue" icon={uiIcons.missedCalls} /></Link>
-        <Link href="/pets"><QuickActionButton label="Same Fluff as Last Time" icon={uiIcons.sameAsLastTime} /></Link>
-        <Link href="/reviews"><QuickActionButton label="Come Back Soon campaigns" icon={uiIcons.rebooking} /></Link>
-      </div>
-
-      <RevenueSnapshot paid={paid} outstanding={outstanding} deposits={deposits} />
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card className="rounded-[32px] border-white/80 bg-white/90">
-          <CardHeader>
-            <CardTitle className="font-heading text-2xl">Today&apos;s appointments</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {todayAppointments.length ? (
-              todayAppointments.map((appointment) => {
-                const pet = workspace.pets.find((item) => item.id === appointment.petId);
-                const customer = workspace.customers.find((item) => item.id === appointment.customerId);
-                return (
-                  <div key={appointment.id} className="flex items-center justify-between rounded-[24px] bg-zinc-50 p-4">
-                    <Link href={`/appointments/${appointment.id}`} className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                      <div>
-                        <p className="font-medium text-zinc-900">{appointment.startTime} · {pet?.name}</p>
-                        <p className="text-sm text-zinc-500">{customer?.name}</p>
-                      </div>
-                      <StatusBadge status={appointment.status} />
-                    </Link>
-                  </div>
-                );
-              })
-            ) : (
-              <EmptyState title="A calm calendar" body="No appointments are scheduled today yet." icon={uiIcons.appointments} />
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-[32px] border-white/80 bg-white/90">
-          <CardHeader>
-            <CardTitle className="font-heading text-2xl">Vaccine Watch</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {vaccineAlerts.length ? (
-              vaccineAlerts.map(({ pet, record }) => {
-                const customer = workspace.customers.find((item) => item.id === pet.customerId);
-                return (
-                  <div key={record.id} className="rounded-[24px] bg-zinc-50 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-medium text-zinc-900">{pet.name} · {record.name}</p>
-                        <p className="text-sm text-zinc-500">{customer?.name} · expires {record.expiresAt}</p>
-                      </div>
-                      <button
-                        className="rounded-full bg-zinc-900 px-3 py-2 text-sm font-medium text-white"
-                        onClick={() =>
-                          addMessage({
-                            organizationId: workspace.organization.id,
-                            customerId: customer?.id,
-                            petId: pet.id,
-                            channel: "sms",
-                            direction: "outbound",
-                            subject: "Vaccine reminder",
-                            body: `${pet.name}'s ${record.name} record is ${record.status.replace("-", " ")}. Please upload an update before boarding or daycare.`,
-                            sender: "PawFlow Automations",
-                          })
-                        }
-                      >
-                        Mock-send
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <EmptyState title="All clear" body="No vaccine issues need attention right now." icon={uiIcons.vaccine} />
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Outstanding balances</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="font-heading text-3xl font-semibold text-zinc-900">{money(outstandingCents)}</p>
+          <p className="text-sm text-zinc-500">
+            Across {invoices.filter((i) => i.status === "unpaid" || i.status === "partial").length} unpaid invoices
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

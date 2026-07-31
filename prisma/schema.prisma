@@ -431,3 +431,15 @@ model AuditEvent {
   @@index([businessId])
   @@index([createdAt])
 }
+
+// Failed-login ledger for rate limiting. NOT tenant-scoped: it is a pre-auth
+// security guardrail keyed by a normalized identifier ("email:<addr>" or
+// "ip:<addr>"). The login action fails closed when an identifier exceeds its
+// failure budget inside the rolling window.
+model LoginAttempt {
+  id         String   @id @default(cuid())
+  identifier String
+  createdAt  DateTime @default(now())
+
+  @@index([identifier, createdAt])
+}

@@ -1,16 +1,12 @@
-"use client";
+import { requireSession } from "@/lib/session";
+import { ComingSoon } from "@/components/coming-soon";
 
-import { usePawFlow } from "@/components/pawflow-provider";
-import { AutomationToggleCard } from "@/components/pawflow-ui";
-
-export default function AutomationsPage() {
-  const { workspace, toggleAutomation } = usePawFlow();
-
+export default async function AutomationsPage() {
+  await requireSession();
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      {workspace.automations.map((automation) => (
-        <AutomationToggleCard key={automation.id} automation={automation} onToggle={() => toggleAutomation(automation.key)} />
-      ))}
-    </div>
+    <ComingSoon
+      title="Automations"
+      description="Reminder, reactivation, and review-request automations will be configured here once their scheduling model is in place."
+    />
   );
 }

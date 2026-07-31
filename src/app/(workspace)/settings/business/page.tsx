@@ -1,156 +1,76 @@
-"use client";
-
-import { usePawFlow } from "@/components/pawflow-provider";
+import { db } from "@/server/db";
+import { requireSession } from "@/lib/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { updateBusinessAction } from "../../actions";
 
-export default function BusinessSettingsPage() {
-  const { workspace, updateBusinessSettings, updateService } = usePawFlow();
-  const business = workspace.organization;
+export default async function BusinessSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; saved?: string }>;
+}) {
+  const session = await requireSession();
+  const { error, saved } = await searchParams;
+  const [business, services] = await Promise.all([
+    db.getBusiness(session.user.businessId),
+    db.listServices(session.user.businessId),
+  ]);
 
   return (
-    <div className="space-y-6">
-      <Card className="rounded-[32px] border-white/80 bg-white/90">
+    <div className="space-y-4">
+      <Card>
         <CardHeader>
-          <CardTitle className="font-heading text-2xl">Business settings</CardTitle>
+          <CardTitle>Business details</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <section className="space-y-4">
-            <div>
-              <h2 className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-500">Contact & location</h2>
-              <p className="mt-1 text-sm text-zinc-600">Edit the public business details customers and staff rely on.</p>
+        <CardContent>
+          {saved ? (
+            <p className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Saved.</p>
+          ) : null}
+          {error ? (
+            <p className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
+          ) : null}
+          <form action={updateBusinessAction} className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-zinc-500">Business name</label>
+              <Input name="name" defaultValue={business?.name ?? ""} required />
             </div>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <LabeledField label="Website URL">
-                <Input value={business.websiteUrl || ""} onChange={(e) => updateBusinessSettings({ websiteUrl: e.target.value })} />
-              </LabeledField>
-              <LabeledField label="Contact email">
-                <Input value={business.contactEmail || ""} onChange={(e) => updateBusinessSettings({ contactEmail: e.target.value })} />
-              </LabeledField>
-              <LabeledField label="Contact phone">
-                <Input value={business.contactPhone || ""} onChange={(e) => updateBusinessSettings({ contactPhone: e.target.value })} />
-              </LabeledField>
-              <LabeledField label="Business address">
-                <Input value={business.address || ""} onChange={(e) => updateBusinessSettings({ address: e.target.value })} />
-              </LabeledField>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-500">Timezone</label>
+                <Input name="timezone" defaultValue={business?.timezone ?? ""} placeholder="America/New_York" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-500">Boarding capacity</label>
+                <Input name="boardingCapacity" type="number" min="0" defaultValue={business?.boardingCapacity ?? 0} />
+              </div>
             </div>
-          </section>
-
-          <section className="space-y-4">
-            <div>
-              <h2 className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-500">Hours & boarding capacity</h2>
-              <p className="mt-1 text-sm text-zinc-600">Keep your schedule and available boarding crate count clearly defined.</p>
-            </div>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <LabeledField label="Business hours">
-                <Textarea value={business.hours.join("\n")} onChange={(e) => updateBusinessSettings({ hours: e.target.value.split("\n") })} />
-              </LabeledField>
-              <LabeledField label="Available boarding crates">
-                <Input
-                  type="number"
-                  value={String(business.boardingCapacity)}
-                  onChange={(e) => updateBusinessSettings({ boardingCapacity: Number(e.target.value) })}
-                />
-              </LabeledField>
-            </div>
-          </section>
-
-          <section className="space-y-4">
-            <div>
-              <h2 className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-500">Policies & AI rules</h2>
-              <p className="mt-1 text-sm text-zinc-600">These settings control deposits, cancellations, vaccine requirements, and assistant behavior.</p>
-            </div>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <LabeledField label="Cancellation policy">
-                <Textarea value={business.cancellationPolicy} onChange={(e) => updateBusinessSettings({ cancellationPolicy: e.target.value })} />
-              </LabeledField>
-              <LabeledField label="Deposit policy">
-                <Textarea value={business.depositPolicy} onChange={(e) => updateBusinessSettings({ depositPolicy: e.target.value })} />
-              </LabeledField>
-              <LabeledField label="Vaccine requirements">
-                <Textarea
-                  value={business.vaccineRequirements.join("\n")}
-                  onChange={(e) => updateBusinessSettings({ vaccineRequirements: e.target.value.split("\n") })}
-                />
-              </LabeledField>
-              <LabeledField label="AI guardrails">
-                <Textarea value={business.aiGuardrails.join("\n")} onChange={(e) => updateBusinessSettings({ aiGuardrails: e.target.value.split("\n") })} />
-              </LabeledField>
-            </div>
-          </section>
+            <Button type="submit" size="sm" className="rounded-full bg-[#79c6bf] text-zinc-900 hover:bg-[#68b7af]">
+              Save
+            </Button>
+          </form>
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="rounded-[32px] border-white/80 bg-white/90">
-          <CardHeader>
-            <CardTitle className="font-heading text-2xl">Services & pricing</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            {workspace.services.map((service) => (
-              <div key={service.id} className="rounded-[24px] bg-zinc-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">{service.category}</p>
-                <div className="mt-3 grid gap-3">
-                  <LabeledField label="Service name">
-                    <Input value={service.name} onChange={(e) => updateService(service.id, { name: e.target.value })} />
-                  </LabeledField>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <LabeledField label="Base charge">
-                      <Input
-                        type="number"
-                        value={String(service.price)}
-                        onChange={(e) => updateService(service.id, { price: Number(e.target.value) })}
-                      />
-                    </LabeledField>
-                    <LabeledField label="Duration (minutes)">
-                      <Input
-                        type="number"
-                        value={String(service.durationMinutes)}
-                        onChange={(e) => updateService(service.id, { durationMinutes: Number(e.target.value) })}
-                      />
-                    </LabeledField>
-                    <LabeledField label="Deposit charge">
-                      <Input
-                        type="number"
-                        value={String(service.depositAmount)}
-                        onChange={(e) => updateService(service.id, { depositAmount: Number(e.target.value) })}
-                      />
-                    </LabeledField>
-                  </div>
-                  <LabeledField label="Service description">
-                    <Textarea value={service.description} onChange={(e) => updateService(service.id, { description: e.target.value })} />
-                  </LabeledField>
-                </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Services ({services.length})</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {services.length === 0 ? (
+            <p className="text-sm text-zinc-500">No services yet.</p>
+          ) : (
+            services.map((s) => (
+              <div key={s.id} className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white px-3 py-2">
+                <span className="text-sm text-zinc-700">{s.name}</span>
+                <span className="text-xs text-zinc-500">
+                  {s.durationMinutes ? `${s.durationMinutes}m · ` : ""}${(s.priceCents / 100).toFixed(2)}
+                </span>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-[32px] border-white/80 bg-white/90">
-          <CardHeader>
-            <CardTitle className="font-heading text-2xl">Staff</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            {workspace.staff.map((staff) => (
-              <div key={staff.id} className="rounded-[24px] bg-zinc-50 p-4">
-                <p className="font-medium text-zinc-900">{staff.name}</p>
-                <p className="text-sm text-zinc-600">{staff.roleLabel} · {staff.specialty}</p>
-                <p className="mt-2 text-sm text-zinc-700">{staff.phone}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
-  );
-}
-
-function LabeledField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="grid gap-2 text-sm font-medium text-zinc-700">
-      <span>{label}</span>
-      {children}
-    </label>
   );
 }

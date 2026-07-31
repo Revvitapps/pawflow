@@ -1,95 +1,133 @@
-"use client";
-
 import Link from "next/link";
-import { useState } from "react";
 
-import { usePawFlow } from "@/components/pawflow-provider";
-import { AppointmentCard, EmptyState } from "@/components/pawflow-ui";
-import { Button } from "@/components/ui/button";
+import { db } from "@/server/db";
+import { requireSession } from "@/lib/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { createAppointmentAction, setAppointmentStatusAction } from "../actions";
 
-export default function AppointmentsPage() {
-  const { workspace, approveIntakeRequest, updateAppointmentStatus, addMessage, addAiLog, runAiTask } = usePawFlow();
-  const [busyId, setBusyId] = useState<string | null>(null);
+const STATUS_OPTIONS = [
+  "requested",
+  "confirmed",
+  "checked_in",
+  "in_progress",
+  "ready",
+  "completed",
+  "cancelled",
+  "no_show",
+] as const;
 
-  const handleStatusChange = async (appointmentId: string, status: Parameters<typeof updateAppointmentStatus>[1]) => {
-    const appointment = workspace.appointments.find((item) => item.id === appointmentId);
-    if (!appointment) return;
-    const customer = workspace.customers.find((item) => item.id === appointment.customerId);
-    const pet = workspace.pets.find((item) => item.id === appointment.petId);
-    updateAppointmentStatus(appointmentId, status);
+function money(cents: number) {
+  return `$${(cents / 100).toFixed(2)}`;
+}
 
-    if (status === "ready" && customer && pet) {
-      setBusyId(appointmentId);
-      const output = await runAiTask("generateReadyForPickupMessage", { customerName: customer.name, petName: pet.name });
-      addAiLog("generateReadyForPickupMessage", `${customer.name} / ${pet.name}`, output);
-      addMessage({
-        organizationId: workspace.organization.id,
-        customerId: customer.id,
-        petId: pet.id,
-        channel: "sms",
-        direction: "outbound",
-        subject: "Ready to Wag",
-        body: output,
-        sender: "Front Desk",
-        aiSuggested: true,
-      });
-      setBusyId(null);
-    }
-  };
+export default async function AppointmentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const session = await requireSession();
+  const { error } = await searchParams;
+  const [appointments, clients, pets, services] = await Promise.all([
+    db.listAppointments(session.user.businessId),
+    db.listClients(session.user.businessId),
+    db.listPets(session.user.businessId),
+    db.listServices(session.user.businessId),
+  ]);
+
+  const canCreate = clients.length > 0 && pets.length > 0;
 
   return (
-    <div className="space-y-6">
-      <Card className="rounded-[32px] border-white/80 bg-white/90">
-        <CardHeader>
-          <CardTitle className="font-heading text-2xl">Appointment Lifecycle</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          {workspace.appointments.map((appointment) => (
-            <div key={appointment.id} className="space-y-2">
-              <AppointmentCard
-                appointment={appointment}
-                pet={workspace.pets.find((pet) => pet.id === appointment.petId)}
-                customer={workspace.customers.find((customer) => customer.id === appointment.customerId)}
-                serviceLabel={workspace.services.find((service) => service.id === appointment.serviceId)?.name || "Service"}
-                staffName={workspace.staff.find((staff) => staff.id === appointment.staffId)?.name || "Staff"}
-                onStatusChange={(status) => void handleStatusChange(appointment.id, status)}
-              />
-              <Link href={`/appointments/${appointment.id}`}>
-                <Button variant="outline" className="w-full rounded-full">Open appointment detail</Button>
-              </Link>
+    <div className="space-y-4">
+      <details className="rounded-2xl border border-zinc-200 bg-white p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-zinc-800">+ New appointment</summary>
+        {error ? (
+          <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
+        ) : null}
+        {!canCreate ? (
+          <p className="mt-3 text-sm text-zinc-500">Add at least one client and pet first.</p>
+        ) : (
+          <form action={createAppointmentAction} className="mt-3 space-y-3">
+            <select name="clientId" required defaultValue="" className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-2 text-sm text-zinc-700">
+              <option value="" disabled>Client…</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <select name="petId" required defaultValue="" className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-2 text-sm text-zinc-700">
+              <option value="" disabled>Pet…</option>
+              {pets.map((p) => (
+                <option key={p.id} value={p.id}>{p.name} ({p.client?.name ?? "—"})</option>
+              ))}
+            </select>
+            <select name="serviceId" defaultValue="" className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-2 text-sm text-zinc-700">
+              <option value="">Service (optional)…</option>
+              {services.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+            <div className="grid grid-cols-3 gap-2">
+              <Input name="date" type="date" required />
+              <Input name="startTime" type="time" required />
+              <Input name="endTime" type="time" required />
             </div>
-          ))}
-          {busyId ? <p className="text-sm text-zinc-500">Generating ready-for-pickup message...</p> : null}
-        </CardContent>
-      </Card>
+            <Input name="priceDollars" type="number" step="0.01" min="0" placeholder="Price (USD)" />
+            <Input name="notes" placeholder="Notes (optional)" />
+            <Button type="submit" size="sm" className="rounded-full bg-[#79c6bf] text-zinc-900 hover:bg-[#68b7af]">
+              Book appointment
+            </Button>
+          </form>
+        )}
+      </details>
 
-      <Card className="rounded-[32px] border-white/80 bg-white/90">
+      <Card>
         <CardHeader>
-          <CardTitle className="font-heading text-2xl">New customer intake</CardTitle>
+          <CardTitle>Appointments ({appointments.length})</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4">
-          {workspace.intakeRequests.length ? (
-            workspace.intakeRequests.map((request) => {
-              const customer = workspace.customers.find((item) => item.id === request.customerId);
-              const pet = workspace.pets.find((item) => item.id === request.petId);
-              return (
-                <div key={request.id} className="rounded-[28px] bg-zinc-50 p-5">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.24em] text-zinc-400">{request.type} intake</p>
-                      <h3 className="font-heading text-xl font-semibold text-zinc-900">{pet?.name} · {customer?.name}</h3>
-                      <p className="mt-2 text-sm text-zinc-600">{request.aiSummary}</p>
-                    </div>
-                    <Button className="rounded-full" onClick={() => approveIntakeRequest(request.id)} disabled={request.status !== "new"}>
-                      {request.status === "new" ? "Approve + convert to appointment" : "Scheduled"}
-                    </Button>
-                  </div>
-                </div>
-              );
-            })
+        <CardContent className="space-y-3">
+          {appointments.length === 0 ? (
+            <p className="text-sm text-zinc-500">No appointments yet.</p>
           ) : (
-            <EmptyState title="No fresh intake requests" body="Portal and AI receptionist submissions will land here for staff approval." icon={() => null} />
+            appointments.map((a) => (
+              <div key={a.id} className="rounded-2xl border border-zinc-100 bg-white p-4">
+                <Link href={`/appointments/${a.id}`} className="block">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-heading text-base font-semibold text-zinc-900">
+                        {a.pet?.name ?? "Pet"} · {a.client?.name ?? "Client"}
+                      </p>
+                      <p className="text-sm text-zinc-500">
+                        {new Date(a.date).toLocaleDateString()} · {a.startTime}–{a.endTime}
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        {a.service?.name ?? "Service"} · {money(a.priceCents)}
+                        {a.staff?.name ? ` · ${a.staff.name}` : ""}
+                      </p>
+                    </div>
+                    <Badge variant="secondary">{a.status.replace("_", " ")}</Badge>
+                  </div>
+                </Link>
+                <form action={setAppointmentStatusAction} className="mt-3 flex items-center gap-2">
+                  <input type="hidden" name="id" value={a.id} />
+                  <select
+                    name="status"
+                    defaultValue={a.status}
+                    className="flex-1 rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-sm text-zinc-700"
+                  >
+                    {STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s}>
+                        {s.replace("_", " ")}
+                      </option>
+                    ))}
+                  </select>
+                  <Button type="submit" size="sm" variant="outline" className="rounded-lg">
+                    Update
+                  </Button>
+                </form>
+              </div>
+            ))
           )}
         </CardContent>
       </Card>

@@ -1,81 +1,69 @@
-"use client";
-
 import Link from "next/link";
 
-import { usePawFlow } from "@/components/pawflow-provider";
-import { Button } from "@/components/ui/button";
-import { MiniMetric } from "@/components/pawflow-ui";
+import { db } from "@/server/db";
+import { requireSession } from "@/lib/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { markInvoicePaidAction } from "../actions";
 
-export default function PaymentsPage() {
-  const { workspace, updatePaymentStatus, addMessage } = usePawFlow();
-  const unpaid = workspace.payments.filter((payment) => payment.status === "unpaid").reduce((sum, payment) => sum + payment.amount, 0);
-  const deposits = workspace.payments.reduce((sum, payment) => sum + payment.depositAmount, 0);
-  const noShowFees = workspace.appointments.filter((appointment) => appointment.status === "no-show").length * 25;
+function money(cents: number) {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+export default async function PaymentsPage() {
+  const session = await requireSession();
+  const invoices = await db.listInvoices(session.user.businessId);
+
+  const outstanding = invoices
+    .filter((i) => i.status === "unpaid" || i.status === "partial")
+    .reduce((sum, i) => sum + i.amountCents, 0);
+  const collected = invoices.filter((i) => i.status === "paid").reduce((sum, i) => sum + i.amountCents, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        <MiniMetric label="Unpaid balances" value={`$${unpaid.toFixed(0)}`} colorClassName="bg-amber-50" />
-        <MiniMetric label="Deposits tracked" value={`$${deposits.toFixed(0)}`} colorClassName="bg-sky-50" />
-        <MiniMetric label="No-show fee tracking" value={`$${noShowFees.toFixed(0)}`} colorClassName="bg-rose-50" />
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-2xl border border-white/70 bg-[#fff1e8] p-4">
+          <p className="font-heading text-2xl font-semibold text-zinc-900">{money(outstanding)}</p>
+          <p className="text-xs font-medium text-zinc-500">Outstanding</p>
+        </div>
+        <div className="rounded-2xl border border-white/70 bg-[#f4fbfa] p-4">
+          <p className="font-heading text-2xl font-semibold text-zinc-900">{money(collected)}</p>
+          <p className="text-xs font-medium text-zinc-500">Collected</p>
+        </div>
       </div>
 
-      <Card className="rounded-[32px] border-white/80 bg-white/90">
+      <Card>
         <CardHeader>
-          <CardTitle className="font-heading text-2xl">Invoices, deposits, and mocked payments</CardTitle>
+          <CardTitle>Invoices ({invoices.length})</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {workspace.payments.map((payment) => {
-            const customer = workspace.customers.find((item) => item.id === payment.customerId);
-            return (
-              <div key={payment.id} className="grid gap-3 rounded-[24px] bg-zinc-50 p-4 md:grid-cols-[1fr_auto_auto_auto] md:items-center">
-                <div>
-                  <p className="font-medium text-zinc-900">{payment.label}</p>
-                  <p className="text-sm text-zinc-500">{customer?.name} · due {payment.dueDate}</p>
-                </div>
-                <p className="text-sm text-zinc-700">Total ${payment.amount}</p>
-                <p className="text-sm text-zinc-700">Deposit ${payment.depositAmount}</p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="rounded-full bg-white px-3 py-2 text-sm font-medium text-zinc-700">{payment.status}</div>
-                  {payment.status !== "paid" ? (
-                    <Button
-                      size="sm"
-                      className="rounded-full"
-                      onClick={() => updatePaymentStatus(payment.id, "paid")}
-                    >
+        <CardContent className="space-y-2">
+          {invoices.length === 0 ? (
+            <p className="text-sm text-zinc-500">No invoices yet.</p>
+          ) : (
+            invoices.map((inv) => (
+              <div key={inv.id} className="rounded-xl border border-zinc-100 bg-white px-3 py-2">
+                <Link href={`/payments/${inv.id}`} className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-zinc-900">{inv.label}</p>
+                    <p className="text-xs text-zinc-500">{inv.client?.name ?? "—"} · due {new Date(inv.dueDate).toLocaleDateString()}</p>
+                  </div>
+                  <span className="flex items-center gap-2 text-sm text-zinc-800">
+                    {money(inv.amountCents)}
+                    <Badge variant="secondary">{inv.status}</Badge>
+                  </span>
+                </Link>
+                {inv.status !== "paid" && inv.status !== "void" ? (
+                  <form action={markInvoicePaidAction} className="mt-2">
+                    <input type="hidden" name="id" value={inv.id} />
+                    <Button type="submit" size="sm" variant="outline" className="rounded-lg">
                       Mark paid
                     </Button>
-                  ) : null}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="rounded-full"
-                    onClick={() => {
-                      if (!customer) return;
-                      addMessage({
-                        organizationId: workspace.organization.id,
-                        customerId: customer.id,
-                        channel: "sms",
-                        direction: "outbound",
-                        subject: "Payment reminder",
-                        body: `Friendly reminder: ${payment.label} for $${payment.amount} is ${payment.status}.`,
-                        sender: "PawFlow Payments",
-                      });
-                    }}
-                  >
-                    Send reminder
-                  </Button>
-                  <Link href={`/payments/${payment.id}`}>
-                    <Button size="sm" variant="outline" className="rounded-full">Detail</Button>
-                  </Link>
-                </div>
+                  </form>
+                ) : null}
               </div>
-            );
-          })}
-          <div className="rounded-[28px] border border-dashed border-zinc-200 bg-white px-5 py-4 text-sm text-zinc-600">
-            Stripe / Square production integrations are intentionally mocked in this MVP, but the UI is structured for future payment provider wiring.
-          </div>
+            ))
+          )}
         </CardContent>
       </Card>
     </div>
