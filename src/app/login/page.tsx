@@ -40,7 +40,12 @@ export default async function LoginPage({
                 <Input id="email" name="email" type="email" autoComplete="email" required />
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="password" className="text-sm font-medium text-zinc-700">Password</label>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="password" className="text-sm font-medium text-zinc-700">Password</label>
+                  <Link href="/forgot-password" className="text-xs font-medium text-[#2f8f86] underline underline-offset-4">
+                    Forgot password?
+                  </Link>
+                </div>
                 <Input id="password" name="password" type="password" autoComplete="current-password" required />
               </div>
               <Button type="submit" className="w-full rounded-full bg-[#79c6bf] py-6 text-zinc-900 hover:bg-[#68b7af]">

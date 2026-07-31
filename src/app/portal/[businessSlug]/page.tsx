@@ -12,10 +12,9 @@ export default async function CustomerPortalPage({
   const business = await getPublicBusinessBySlug(businessSlug);
   if (!business) notFound();
 
-  const brand = (business.brand as Record<string, string> | undefined) ?? {};
-  const primary = brand.primaryColor || "#79c6bf";
-  const secondary = brand.secondaryColor || "#dff3f0";
-  const headline = brand.portalHeadline || "Booking, intake, and updates for your pet — all in one place.";
+  const primary = business.brand.primaryColor || "#79c6bf";
+  const secondary = business.brand.secondaryColor || "#dff3f0";
+  const headline = business.brand.portalHeadline || "Booking, intake, and updates for your pet — all in one place.";
 
   return (
     <main

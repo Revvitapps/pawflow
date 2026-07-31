@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { AppointmentStatus, ReservationStatus } from "@prisma/client";
 import { db } from "@/server/db";
-import { requireSession } from "@/lib/session";
+import { requireSession, requireRole, AuthorizationError } from "@/lib/session";
 import {
   ClientCreateSchema,
   ClientUpdateSchema,
@@ -283,7 +283,12 @@ export async function createReservationAction(formData: FormData) {
 // ---------------------------------------------------------------------------
 
 export async function updateBusinessAction(formData: FormData) {
-  const session = await requireSession();
+  // Settings writes are owner-only (least privilege) — a valid staff session is
+  // not enough.
+  const session = await requireRole(["owner"]).catch((e) => {
+    if (e instanceof AuthorizationError) failTo("/settings/business", e.message);
+    throw e;
+  });
   const parsed = BusinessSettingsSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) failTo("/settings/business", firstError(parsed.error));
 
@@ -304,7 +309,10 @@ export async function updateBusinessAction(formData: FormData) {
 }
 
 export async function updateBrandAction(formData: FormData) {
-  const session = await requireSession();
+  const session = await requireRole(["owner"]).catch((e) => {
+    if (e instanceof AuthorizationError) failTo("/settings/brand", e.message);
+    throw e;
+  });
   const parsed = BrandSettingsSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) failTo("/settings/brand", firstError(parsed.error));
 
@@ -340,7 +348,11 @@ export async function sendMessageAction(formData: FormData) {
 // ---------------------------------------------------------------------------
 
 export async function markInvoicePaidAction(formData: FormData) {
-  const session = await requireSession();
+  // Financial writes: owners and front desk only.
+  const session = await requireRole(["owner", "front_desk"]).catch((e) => {
+    if (e instanceof AuthorizationError) failTo("/payments", e.message);
+    throw e;
+  });
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   await db.setInvoiceStatus(session.user.businessId, id, "paid");
