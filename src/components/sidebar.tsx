@@ -11,6 +11,7 @@ import {
   Inbox,
   PawPrint,
   Settings2,
+  Shield,
   Sparkles,
   Star,
   Store,
@@ -34,6 +35,7 @@ const navItems = [
   { href: "/reviews", label: "Reviews", icon: Star },
   { href: "/settings/brand", label: "Brand", icon: Star },
   { href: "/settings/business", label: "Business", icon: Settings2 },
+  { href: "/settings/security", label: "Security", icon: Shield },
 ];
 
 export function Sidebar({

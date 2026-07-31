@@ -2,11 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { getOptionalSession } from "@/lib/session";
-import { loginAction } from "./actions";
+import { LoginForm } from "./login-form";
 
 export default async function LoginPage({
   searchParams,
@@ -16,6 +14,8 @@ export default async function LoginPage({
   const session = await getOptionalSession();
   if (session?.user?.businessId) redirect("/dashboard");
 
+  // External redirects (e.g. an expired reset link) can still land here with an
+  // ?error= banner; the login form surfaces its own inline errors via state.
   const { error } = await searchParams;
 
   return (
@@ -34,30 +34,7 @@ export default async function LoginPage({
                 {error}
               </p>
             ) : null}
-            <form action={loginAction} className="space-y-4">
-              <div className="space-y-1.5">
-                <label htmlFor="email" className="text-sm font-medium text-zinc-700">Email</label>
-                <Input id="email" name="email" type="email" autoComplete="email" required />
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-sm font-medium text-zinc-700">Password</label>
-                  <Link href="/forgot-password" className="text-xs font-medium text-[#2f8f86] underline underline-offset-4">
-                    Forgot password?
-                  </Link>
-                </div>
-                <Input id="password" name="password" type="password" autoComplete="current-password" required />
-              </div>
-              <Button type="submit" className="w-full rounded-full bg-[#79c6bf] py-6 text-zinc-900 hover:bg-[#68b7af]">
-                Log in
-              </Button>
-            </form>
-            <p className="mt-5 text-center text-sm text-zinc-600">
-              New to PawFlow?{" "}
-              <Link href="/signup" className="font-medium text-[#2f8f86] underline underline-offset-4">
-                Create a business
-              </Link>
-            </p>
+            <LoginForm />
           </CardContent>
         </Card>
         <Link href="/" className="mt-6 text-sm text-zinc-500 underline underline-offset-4">
