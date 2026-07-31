@@ -1,0 +1,11 @@
+{
+  "name": "@revvitapps/auth-mfa",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "otpauth": "^9.3.6"
+  }
+}

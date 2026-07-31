@@ -75,6 +75,13 @@ export const MessageCreateSchema = z.object({
   body: z.string().trim().min(1, "Message is required").max(2000),
 });
 
+/** A second-factor code: a 6-digit TOTP or an alphanumeric backup code. Kept
+ *  permissive on characters (backup codes may contain letters/dashes) but
+ *  length-bounded so it can never be an oversized payload. */
+export const MfaCodeSchema = z.object({
+  code: z.string().trim().min(1, "Enter your authentication code.").max(64),
+});
+
 /** Returns the first zod issue message, for surfacing in a redirect query. */
 export function firstError(err: z.ZodError): string {
   return err.issues[0]?.message ?? "Invalid input.";

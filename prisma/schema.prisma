@@ -161,8 +161,41 @@ model User {
 
   memberships  Membership[]
   resetTokens  PasswordResetToken[]
+  mfa          UserMfa?
 
   @@index([businessId])
+}
+
+/// Second-factor (MFA) enrollment for a User, backing @revvitapps/auth-mfa
+/// (RFC 6238 TOTP + single-use backup codes) via createPrismaMfaStore. One row
+/// per user; `userId` is the opaque key the package is keyed by, wired here to
+/// User.id. Nothing in Pawflow reads these columns directly — only the package
+/// (through the reference Prisma adapter) touches them. Column names must match
+/// the package's schema.template.prisma exactly for the adapter to work.
+model UserMfa {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // TOTP secret. AES-256-GCM ciphertext when MFA_SECRET_KEY is set on
+  // createAuthMfa (strongly recommended); raw base32 otherwise. Null before
+  // enrollment begins and after disable().
+  secret String?
+
+  // False between beginEnrollment and a successful confirmEnrollment;
+  // verify()/verifyBackupCode() are no-ops while false.
+  enabled Boolean @default(false)
+
+  // SHA-256 hex digests of single-use backup codes — never the codes
+  // themselves. Consuming a code removes its digest. Postgres native array.
+  backupCodeHashes String[]
+
+  enrolledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // Password-reset tokens. Only the SHA-256 hash of the token is stored at rest,

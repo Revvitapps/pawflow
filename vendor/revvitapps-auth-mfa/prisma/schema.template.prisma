@@ -1,0 +1,63 @@
+// RevMFA schema TEMPLATE. Two equivalent ways to adopt — pick ONE:
+//
+//   (A) A dedicated UserMfa model (shown below), one row per user, related
+//       back to the host's own user/person table. This is the default the
+//       Prisma reference adapter (`createPrismaMfaStore`) expects.
+//
+//   (B) Inline the same columns onto an existing user model instead of a
+//       separate table (see the commented block at the bottom). Then wire a
+//       thin custom MfaStore rather than the reference adapter.
+//
+// RevMFA never imports a generated client — the Prisma reference adapter is
+// structurally typed and only needs these column names.
+//
+// Notes for the host:
+//   * `userId` is the OPAQUE key RevMFA is keyed by. Wire it to your own user
+//     table (StaffUser, Person, User…). RevMFA never interprets it.
+//   * `secret` holds the TOTP secret. If you pass a `secretEncryptionKey` to
+//     `createAuthMfa`, RevMFA stores the AES-256-GCM ciphertext here; without a
+//     key it stores the raw base32 secret (STRONGLY prefer supplying a key — a
+//     leaked DB then does not hand an attacker every user's live TOTP seed).
+//   * `enabled` is false between `beginEnrollment` and a successful
+//     `confirmEnrollment`; `verify()` only succeeds once it is true.
+//   * `backupCodeHashes` stores SHA-256 hex digests of the one-time recovery
+//     codes — never the codes themselves. Modeled here as a scalar String[]
+//     (Postgres native array). On a DB without array columns, store a
+//     JSON-encoded string and decode in your store adapter.
+//   * `enrolledAt` is stamped at successful confirmation.
+
+model UserMfa {
+  id     String @id @default(cuid())
+  userId String @unique
+  // user   StaffUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // TOTP secret — AES-256-GCM ciphertext when a secretEncryptionKey is set on
+  // createAuthMfa (recommended), otherwise the raw base32 secret. Null before
+  // enrollment begins and after disable().
+  secret String?
+
+  // False until confirmEnrollment succeeds. verify()/verifyBackupCode() are
+  // no-ops (return false) while this is false.
+  enabled Boolean @default(false)
+
+  // SHA-256 hex digests of single-use backup codes. Consuming a code removes
+  // its digest from this list. Empty until enrollment is confirmed.
+  backupCodeHashes String[]
+
+  enrolledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// -----------------------------------------------------------------------------
+// (B) Inline variant — add these fields to an existing user model instead of a
+// separate UserMfa table, and back a custom MfaStore that reads/writes them:
+//
+//   mfaSecret           String?
+//   mfaEnabled          Boolean  @default(false)
+//   mfaBackupCodeHashes String[]
+//   mfaEnrolledAt       DateTime?
+// -----------------------------------------------------------------------------

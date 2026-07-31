@@ -1,0 +1,17 @@
+{
+  "sourceRepository": "https://github.com/Revvitapps/revvit-platform",
+  "note": "Checksums of every vendored @revvitapps/* file. Each package carries its own sourceCommit — the revvit-platform commit its dist/ was built from. Verified in CI and locally via `node vendor/verify-manifest.mjs`. Once the package is published to GitHub Packages, replace the vendored copy with a normal versioned dependency and drop its entry here.",
+  "packages": [
+    {
+      "name": "@revvitapps/auth-mfa",
+      "version": "0.1.0",
+      "sourceCommit": "3bfc1ca8d4573931ec9f1ec7e25cf535dfc26636",
+      "files": {
+        "dist/index.d.ts": "15aac8ac700940480de0b049f6a5519e955332c3c9d5c949e531b8732c5ece31",
+        "dist/index.js": "dc43367e5ea9ff06a6e94e0ab65abcaf87fe43eaf7a26a1dc9ecfac71105d1a0",
+        "package.json": "ba69abda44c7a3fbac4ab23e35738603ad9a1fc151c09e19128de22c9f1d6465",
+        "prisma/schema.template.prisma": "285da851634be7ccb2aaafa667d2c52d537096fd2139ea2a461d20cf26dbc683"
+      }
+    }
+  ]
+}
