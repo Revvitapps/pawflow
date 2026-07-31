@@ -152,12 +152,34 @@ model User {
   role         UserRole @default(owner)
   businessId   String
   business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  // Session-revocation counter. Bumped on password change / reset / forced
+  // logout; the next-auth jwt callback compares the token's copy to this and
+  // invalidates any session minted before the bump.
+  tokenVersion Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  memberships Membership[]
+  memberships  Membership[]
+  resetTokens  PasswordResetToken[]
 
   @@index([businessId])
+}
+
+// Password-reset tokens. Only the SHA-256 hash of the token is stored at rest,
+// so a database leak never yields a usable reset link. Tokens are single-use
+// (usedAt) and short-lived (expiresAt); issuing a new one rotates out prior
+// unused tokens for the same user.
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // User <-> Business join carrying the role in that tenant. Unique per pair.

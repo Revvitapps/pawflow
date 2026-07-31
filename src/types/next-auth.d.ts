@@ -14,6 +14,7 @@ declare module "next-auth" {
     id: string;
     businessId: string;
     role: UserRole;
+    tokenVersion: number;
   }
 }
 
@@ -22,6 +23,7 @@ declare module "next-auth/jwt" {
     id: string;
     businessId: string;
     role: UserRole;
+    tokenVersion: number;
   }
 }
 
@@ -30,5 +32,6 @@ declare module "@auth/core/jwt" {
     id: string;
     businessId: string;
     role: UserRole;
+    tokenVersion: number;
   }
 }

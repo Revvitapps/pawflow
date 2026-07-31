@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { db } from "@/server/db";
-import { requireSession } from "@/lib/session";
+import { requireRole, AuthorizationError } from "@/lib/session";
 import { z } from "zod";
 
 const SetupSchema = z.object({
@@ -14,7 +14,13 @@ const SetupSchema = z.object({
 });
 
 export async function completeSetupAction(formData: FormData) {
-  const session = await requireSession();
+  // Initial business setup is an owner-only operation.
+  const session = await requireRole(["owner"]).catch((e) => {
+    if (e instanceof AuthorizationError) {
+      redirect(`/setup?error=${encodeURIComponent(e.message)}`);
+    }
+    throw e;
+  });
   const parsed = SetupSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     redirect(`/setup?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid input.")}`);

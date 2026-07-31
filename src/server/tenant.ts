@@ -102,12 +102,40 @@ export function getBusinessById(businessId: string) {
   return prisma.business.findUnique({ where: { id: businessId } });
 }
 
-/** Public lookup for the customer portal (pre-auth, by slug). Returns only the
- *  fields safe to render publicly. */
-export async function getPublicBusinessBySlug(slug: string) {
+/**
+ * Public lookup for the customer portal (pre-auth, by slug). Returns ONLY the
+ * handful of fields safe to render publicly. The internal id is never exposed,
+ * and the brand JSON blob is reduced to an explicit allow-list of display fields
+ * so an operator who stuffs private data into `brand` can't leak it to the
+ * public portal.
+ */
+export interface PublicBusiness {
+  name: string;
+  slug: string;
+  brand: {
+    primaryColor: string;
+    secondaryColor: string;
+    portalHeadline: string;
+  };
+}
+
+export async function getPublicBusinessBySlug(slug: string): Promise<PublicBusiness | null> {
   const business = await prisma.business.findUnique({
     where: { slug },
-    select: { id: true, name: true, slug: true, brand: true },
+    select: { name: true, slug: true, brand: true },
   });
-  return business;
+  if (!business) return null;
+
+  const brand = (business.brand as Record<string, unknown> | null) ?? {};
+  const asString = (v: unknown) => (typeof v === "string" ? v : "");
+
+  return {
+    name: business.name,
+    slug: business.slug,
+    brand: {
+      primaryColor: asString(brand.primaryColor),
+      secondaryColor: asString(brand.secondaryColor),
+      portalHeadline: asString(brand.portalHeadline),
+    },
+  };
 }
