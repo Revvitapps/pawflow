@@ -21,12 +21,6 @@ import type {
 } from "@/lib/types";
 
 const STORAGE_KEY = "pawflow-demo-workspace-v1";
-const SESSION_KEY = "pawflow-demo-session-v1";
-
-const DEFAULT_SESSION: SessionState = {
-  isDemoLoggedIn: false,
-  role: "owner",
-};
 
 function normalizeWorkspace(workspace: DemoWorkspaceState): DemoWorkspaceState {
   const demo = createDemoWorkspace();
@@ -47,16 +41,6 @@ function normalizeWorkspace(workspace: DemoWorkspaceState): DemoWorkspaceState {
 
   return workspace;
 }
-
-type SessionState = {
-  isDemoLoggedIn: boolean;
-  role: "owner" | "front-desk" | "staff";
-};
-
-type SessionAction =
-  | { type: "hydrate"; payload: SessionState }
-  | { type: "login"; payload: SessionState["role"] }
-  | { type: "logout" };
 
 type HydrationAction = { type: "hydrated" };
 
@@ -461,9 +445,6 @@ function reducer(state: DemoWorkspaceState, action: WorkspaceAction): DemoWorksp
 
 type ProviderValue = {
   workspace: DemoWorkspaceState;
-  session: SessionState;
-  setDemoSession: (role?: SessionState["role"]) => void;
-  logoutDemoSession: () => void;
   resetWorkspace: () => void;
   startBusinessSetup: (payload: SetupWorkspacePayload) => void;
   createIntakeRequest: (request: PortalRequestPayload, aiSummary: string) => void;
@@ -495,19 +476,6 @@ type ProviderValue = {
 
 const PawFlowContext = createContext<ProviderValue | null>(null);
 
-function sessionReducer(state: SessionState, action: SessionAction): SessionState {
-  switch (action.type) {
-    case "hydrate":
-      return action.payload;
-    case "login":
-      return { isDemoLoggedIn: true, role: action.payload };
-    case "logout":
-      return DEFAULT_SESSION;
-    default:
-      return state;
-  }
-}
-
 function hydrationReducer(state: boolean, action: HydrationAction): boolean {
   switch (action.type) {
     case "hydrated":
@@ -519,7 +487,6 @@ function hydrationReducer(state: boolean, action: HydrationAction): boolean {
 
 export function PawFlowProvider({ children }: { children: React.ReactNode }) {
   const [workspace, dispatch] = useReducer(reducer, undefined, createDemoWorkspace);
-  const [session, sessionDispatch] = useReducer(sessionReducer, DEFAULT_SESSION);
   const [hydrated, hydrationDispatch] = useReducer(hydrationReducer, false);
 
   useEffect(() => {
@@ -535,15 +502,6 @@ export function PawFlowProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
-    }
-
-    try {
-      const savedSession = window.localStorage.getItem(SESSION_KEY);
-      if (savedSession) {
-        sessionDispatch({ type: "hydrate", payload: JSON.parse(savedSession) as SessionState });
-      }
-    } catch {
-      window.localStorage.removeItem(SESSION_KEY);
     }
 
     hydrationDispatch({ type: "hydrated" });
@@ -562,30 +520,10 @@ export function PawFlowProvider({ children }: { children: React.ReactNode }) {
     }
   }, [workspace, hydrated]);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    } catch {
-      // Ignore storage failures so auth state does not break rendering.
-    }
-  }, [session, hydrated]);
-
   const value = useMemo<ProviderValue>(
     () => ({
       workspace,
-      session,
       hydrated,
-      setDemoSession(role = "owner") {
-        sessionDispatch({ type: "login", payload: role });
-        // Cookie mirrors the demo session so the proxy (server) can guard
-        // workspace routes. Real Supabase Auth replaces this (fix F8).
-        document.cookie = `pawflow_session=demo-${role}; path=/; max-age=86400; samesite=lax`;
-      },
-      logoutDemoSession() {
-        sessionDispatch({ type: "logout" });
-        document.cookie = "pawflow_session=; path=/; max-age=0; samesite=lax";
-      },
       resetWorkspace() {
         dispatch({ type: "reset" });
       },
@@ -695,7 +633,7 @@ export function PawFlowProvider({ children }: { children: React.ReactNode }) {
         return data.output || "";
       },
     }),
-    [workspace, session, hydrated],
+    [workspace, hydrated],
   );
 
   return <PawFlowContext.Provider value={value}>{children}</PawFlowContext.Provider>;

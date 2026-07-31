@@ -22,7 +22,7 @@ const starterServices = [
 
 export default function SetupPage() {
   const router = useRouter();
-  const { setDemoSession, startBusinessSetup } = usePawFlow();
+  const { startBusinessSetup } = usePawFlow();
   const [step, setStep] = useState(0);
   const [websiteLoading, setWebsiteLoading] = useState(false);
   const [websiteError, setWebsiteError] = useState("");
@@ -314,7 +314,6 @@ export default function SetupPage() {
                   <Button
                     className="rounded-full"
                     onClick={() => {
-                      setDemoSession("owner");
                       startBusinessSetup({
                         businessName: form.businessName || "My Grooming Business",
                         businessSlug: form.businessSlug || "my-grooming-business",

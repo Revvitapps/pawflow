@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getOptionalSession } from "@/lib/session";
-import { loginAction } from "./actions";
+import { signupAction } from "./actions";
 
-export default async function LoginPage({
+export default async function SignupPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
@@ -24,8 +24,11 @@ export default async function LoginPage({
         <div className="relative mb-5 h-20 w-20 overflow-hidden rounded-[28px] bg-white shadow-[0_20px_60px_rgba(61,58,57,0.08)]">
           <Image src="/paw-flow-logo.png" alt="PawFlow logo" fill className="object-contain" sizes="80px" />
         </div>
-        <p className="text-sm font-semibold uppercase tracking-[0.32em] text-zinc-400">Welcome back</p>
-        <h1 className="mt-3 font-heading text-4xl font-semibold text-zinc-900">Log in to PawFlow</h1>
+        <p className="text-sm font-semibold uppercase tracking-[0.32em] text-zinc-400">Get started</p>
+        <h1 className="mt-3 text-center font-heading text-4xl font-semibold text-zinc-900">Create your business</h1>
+        <p className="mt-2 text-center text-sm text-zinc-600">
+          Set up your PawFlow workspace in under a minute. You become the owner.
+        </p>
 
         <Card className="mt-8 w-full rounded-[28px] border-white/80 bg-white/95 shadow-[0_20px_60px_rgba(61,58,57,0.08)]">
           <CardContent className="p-6">
@@ -34,23 +37,32 @@ export default async function LoginPage({
                 {error}
               </p>
             ) : null}
-            <form action={loginAction} className="space-y-4">
+            <form action={signupAction} className="space-y-4">
+              <div className="space-y-1.5">
+                <label htmlFor="businessName" className="text-sm font-medium text-zinc-700">Business name</label>
+                <Input id="businessName" name="businessName" placeholder="Zion & Co Grooming Lodge" required />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="name" className="text-sm font-medium text-zinc-700">Your name</label>
+                <Input id="name" name="name" placeholder="Alex Rivera" required />
+              </div>
               <div className="space-y-1.5">
                 <label htmlFor="email" className="text-sm font-medium text-zinc-700">Email</label>
                 <Input id="email" name="email" type="email" autoComplete="email" required />
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="password" className="text-sm font-medium text-zinc-700">Password</label>
-                <Input id="password" name="password" type="password" autoComplete="current-password" required />
+                <Input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
+                <p className="text-xs text-zinc-400">At least 8 characters.</p>
               </div>
               <Button type="submit" className="w-full rounded-full bg-[#79c6bf] py-6 text-zinc-900 hover:bg-[#68b7af]">
-                Log in
+                Create business
               </Button>
             </form>
             <p className="mt-5 text-center text-sm text-zinc-600">
-              New to PawFlow?{" "}
-              <Link href="/signup" className="font-medium text-[#2f8f86] underline underline-offset-4">
-                Create a business
+              Already have an account?{" "}
+              <Link href="/login" className="font-medium text-[#2f8f86] underline underline-offset-4">
+                Log in
               </Link>
             </p>
           </CardContent>

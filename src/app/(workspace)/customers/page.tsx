@@ -1,104 +1,65 @@
-"use client";
-
-import Link from "next/link";
-import { useState } from "react";
-
-import { usePawFlow } from "@/components/pawflow-provider";
-import { CustomerCard, EmptyState, MessageThread, PetProfileCard } from "@/components/pawflow-ui";
-import { Button } from "@/components/ui/button";
+import { db } from "@/server/db";
+import { requireSession } from "@/lib/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
-export default function CustomersPage() {
-  const { workspace } = usePawFlow();
-  const [query, setQuery] = useState("");
-  const [selectedCustomerId, setSelectedCustomerId] = useState(workspace.customers[0]?.id || "");
+function money(cents: number) {
+  return `$${(cents / 100).toFixed(2)}`;
+}
 
-  const filteredCustomers = workspace.customers.filter((customer) =>
-    [customer.name, customer.email, customer.phone].some((value) => value.toLowerCase().includes(query.toLowerCase())),
-  );
-  const selectedCustomer = workspace.customers.find((customer) => customer.id === selectedCustomerId) || filteredCustomers[0];
-  const customerPets = workspace.pets.filter((pet) => pet.customerId === selectedCustomer?.id);
-  const customerMessages = workspace.messages.filter((message) => message.customerId === selectedCustomer?.id);
-  const customerAppointments = workspace.appointments.filter((appointment) => appointment.customerId === selectedCustomer?.id);
+export default async function CustomersPage() {
+  const session = await requireSession();
+  const clients = await db.listClients(session.user.businessId);
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-      <div className="space-y-4">
-        <Card className="rounded-[32px] border-white/80 bg-white/90">
-          <CardHeader>
-            <CardTitle className="font-heading text-2xl">Customer CRM</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search customers, emails, phones..." />
-            <div className="grid gap-4">
-              {filteredCustomers.map((customer) => (
-                <div key={customer.id} className="space-y-2">
-                  <button className="block w-full text-left" onClick={() => setSelectedCustomerId(customer.id)}>
-                    <CustomerCard customer={customer} petCount={workspace.pets.filter((pet) => pet.customerId === customer.id).length} />
-                  </button>
-                  <Link href={`/customers/${customer.id}`}>
-                    <Button variant="outline" className="w-full rounded-full">Open customer detail</Button>
-                  </Link>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Clients ({clients.length})</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {clients.length === 0 ? (
+            <p className="text-sm text-zinc-500">No clients yet. New clients appear here once they book or are added.</p>
+          ) : (
+            clients.map((client) => (
+              <div key={client.id} className="rounded-2xl border border-zinc-100 bg-white p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-heading text-lg font-semibold text-zinc-900">{client.name}</p>
+                    <p className="text-sm text-zinc-500">
+                      {client.phone || "No phone"} · {client.email || "No email"}
+                    </p>
+                  </div>
+                  {client.balanceCents > 0 ? (
+                    <Badge variant="destructive">{money(client.balanceCents)} due</Badge>
+                  ) : null}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="space-y-4">
-        {selectedCustomer ? (
-          <>
-            <Card className="rounded-[32px] border-white/80 bg-white/90">
-              <CardHeader>
-                <div className="flex items-center justify-between gap-3">
-                  <CardTitle className="font-heading text-2xl">{selectedCustomer.name}</CardTitle>
-                  <Link href={`/customers/${selectedCustomer.id}`}>
-                    <Button variant="outline" className="rounded-full">Full detail</Button>
-                  </Link>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {client.pets.length === 0 ? (
+                    <span className="text-xs text-zinc-400">No pets on file</span>
+                  ) : (
+                    client.pets.map((pet) => (
+                      <Badge key={pet.id} variant="secondary">
+                        {pet.name}
+                        {pet.breed ? ` · ${pet.breed}` : ""}
+                      </Badge>
+                    ))
+                  )}
                 </div>
-              </CardHeader>
-              <CardContent className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-[24px] bg-zinc-50 p-4">
-                  <p className="text-sm text-zinc-500">Contact</p>
-                  <p className="mt-2 text-sm text-zinc-800">{selectedCustomer.phone}</p>
-                  <p className="text-sm text-zinc-800">{selectedCustomer.email}</p>
-                </div>
-                <div className="rounded-[24px] bg-zinc-50 p-4">
-                  <p className="text-sm text-zinc-500">Visit history</p>
-                  <p className="mt-2 text-sm text-zinc-800">{customerAppointments.length} appointments</p>
-                  <p className="text-sm text-zinc-800">Last visit {selectedCustomer.lastVisitAt || "new"}</p>
-                </div>
-                <div className="rounded-[24px] bg-zinc-50 p-4">
-                  <p className="text-sm text-zinc-500">Payment status</p>
-                  <p className="mt-2 text-sm text-zinc-800">${(selectedCustomer.balanceCents / 100).toFixed(2)} balance</p>
-                  <p className="text-sm text-zinc-800">{selectedCustomer.preferredChannel} preferred</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              {customerPets.map((pet) => (
-                <PetProfileCard key={pet.id} pet={pet} owner={selectedCustomer} />
-              ))}
-            </div>
-
-            <Card className="rounded-[32px] border-white/80 bg-white/90">
-              <CardHeader>
-                <CardTitle className="font-heading text-2xl">Message history</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                {customerMessages.length ? (
-                  customerMessages.map((message) => <MessageThread key={message.id} message={message} />)
-                ) : (
-                  <EmptyState title="No messages yet" body="Once messages are sent or received, the unified inbox history appears here." icon={() => null} />
-                )}
-              </CardContent>
-            </Card>
-          </>
-        ) : null}
-      </div>
+                {client.tags.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {client.tags.map((tag) => (
+                      <span key={tag} className="rounded-full bg-[#f4fbfa] px-2 py-0.5 text-[11px] font-medium text-zinc-500">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
