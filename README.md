@@ -31,7 +31,7 @@ Included in this MVP:
 - Tailwind CSS v4
 - shadcn/ui
 - lucide-react
-- OpenAI server-side integration with fallback mode
+- Claude (Anthropic) server-side integration with budget/rate caps and fallback mode
 - Supabase client/server helpers
 - Twilio integration stub with mock mode
 
@@ -51,7 +51,7 @@ Local app URL:
 
 Required for production wiring, optional for demo mode:
 
-- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
@@ -76,7 +76,7 @@ npm run build
 
 ## Demo Mode
 
-Demo mode is the default behavior when Supabase, OpenAI, or Twilio keys are absent.
+Demo mode is the default behavior when Supabase, Anthropic, or Twilio keys are absent.
 
 What still works in demo mode:
 
@@ -107,7 +107,7 @@ Key files:
 - [`src/components/feedback-panel.tsx`](src/components/feedback-panel.tsx): side-tab feedback drawer across the prototype
 - [`src/lib/types.ts`](src/lib/types.ts): domain models
 - [`src/lib/demo-data.ts`](src/lib/demo-data.ts): seeded tenant data
-- [`src/lib/ai.ts`](src/lib/ai.ts): AI service module with OpenAI + fallback mode
+- [`src/lib/ai.ts`](src/lib/ai.ts): AI service module — capped Claude (Anthropic) provider + fallback mode
 - [`src/lib/actions.ts`](src/lib/actions.ts): server-side AI action dispatcher
 - [`src/lib/feedback-store.ts`](src/lib/feedback-store.ts): optional Vercel Blob-backed feedback storage
 - [`src/lib/twilio.ts`](src/lib/twilio.ts): Twilio/mock sending structure
@@ -137,7 +137,7 @@ Key files:
 
 ## AI Setup
 
-Set `OPENAI_API_KEY` in `.env.local` to enable live OpenAI responses.
+Set `ANTHROPIC_API_KEY` in `.env.local` to enable live Claude responses. Spend and call volume are capped server-side (see [`src/lib/ai-usage.ts`](src/lib/ai-usage.ts)).
 
 Current server-side AI functions:
 
@@ -168,10 +168,10 @@ Notes:
 - `created_at` and `updated_at` columns are included
 - RLS guidance is included at the bottom of the migration
 
-## OpenAI Setup
+## Claude (Anthropic) Setup
 
-1. Create an API key.
-2. Add `OPENAI_API_KEY` to `.env.local`.
+1. Create an Anthropic API key.
+2. Add `ANTHROPIC_API_KEY` to `.env.local`.
 3. Restart the dev server.
 
 All AI usage stays server-side through `/api/ai` and [`src/lib/actions.ts`](src/lib/actions.ts). Keys are never exposed client-side.
