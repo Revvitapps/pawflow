@@ -1,46 +1,71 @@
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
 import type { AiTask, DemoWorkspaceState, MissedCallPayload, PortalRequestPayload } from "@/lib/types";
+import { enforceCaps, estimateCostUsd, recordUsage } from "@/lib/ai-usage";
 
-const model = "gpt-4.1-mini";
+// Model is env-overridable; caps pricing knows sonnet-4-6 / opus-5 / opus-4-8 / haiku-4-5.
+const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
+const MAX_TOKENS = 1024;
+
+const SYSTEM_PROMPT =
+  "You are PawFlow, a warm, concise, safety-aware assistant for boutique pet-care businesses. Avoid medical claims. Keep outputs useful and customer-ready.";
 
 function getClient() {
-  const apiKey = process.env.OPENAI_API_KEY;
+  // Never hardcode a key. No ANTHROPIC_API_KEY => AI features disable gracefully.
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return null;
   }
 
-  return new OpenAI({ apiKey });
+  return new Anthropic({ apiKey });
+}
+
+// Core provider primitive. Returns the model's text, or null when AI is
+// disabled (no API key). Throws RateLimitError / BudgetExceededError when a cap
+// is hit — callers that want graceful degradation should catch and fall back.
+export async function askClaude(system: string, prompt: string): Promise<string | null> {
+  const client = getClient();
+  if (!client) {
+    return null;
+  }
+
+  // Caps are enforced BEFORE the call so a blocked request never reaches the API.
+  await enforceCaps();
+
+  const response = await client.messages.create({
+    model,
+    max_tokens: MAX_TOKENS,
+    system,
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  // Record spend from real usage tokens even on empty/edge responses.
+  const cost = estimateCostUsd(
+    response.model || model,
+    response.usage.input_tokens,
+    response.usage.output_tokens,
+  );
+  await recordUsage(cost);
+
+  const text = response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === "text")
+    .map((block) => block.text)
+    .join("")
+    .trim();
+
+  return text || null;
 }
 
 async function runPrompt(task: AiTask, prompt: string, fallback: string) {
-  const client = getClient();
-  if (!client) {
-    return fallback;
-  }
-
   try {
-    const response = await client.responses.create({
-      model,
-      input: [
-        {
-          role: "system",
-          content:
-            "You are PawFlow, a warm, concise, safety-aware assistant for boutique pet-care businesses. Avoid medical claims. Keep outputs useful and customer-ready.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      metadata: { task },
-    });
-
-    return response.output_text || fallback;
+    const text = await askClaude(SYSTEM_PROMPT, prompt);
+    return text || fallback;
   } catch {
+    // Disabled, capped, or upstream error — degrade gracefully to the fallback.
     return fallback;
   }
 }
+
 
 export async function summarizeDay(payload: { workspace: DemoWorkspaceState }) {
   const todayAppointments = payload.workspace.appointments

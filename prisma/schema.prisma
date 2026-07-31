@@ -405,6 +405,16 @@ model Notification {
   @@index([businessId])
 }
 
+// Per-day AI spend + call ledger for the capped Claude provider (src/lib/ai.ts).
+// `day` is the yyyy-mm-dd key; monthly caps sum rows whose day startsWith yyyy-mm.
+// Not tenant-scoped: this is a global backend guardrail on model spend.
+model AiUsage {
+  day       String   @id
+  spentUsd  Float    @default(0)
+  calls     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
 // Append-only audit trail. Scoped by tenant like everything else.
 model AuditEvent {
   id         String   @id @default(cuid())
