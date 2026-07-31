@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Nunito } from "next/font/google";
 
-import { FeedbackPanel } from "@/components/feedback-panel";
 import { PhoneFrame } from "@/components/phone-frame";
 
 import "./globals.css";
@@ -34,7 +33,6 @@ export default function RootLayout({
       <body className="h-full overflow-hidden">
         <PhoneFrame>
           {children}
-          <FeedbackPanel />
         </PhoneFrame>
       </body>
     </html>
