@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Fraunces, Nunito } from "next/font/google";
 
 import { FeedbackPanel } from "@/components/feedback-panel";
-import { PawFlowProvider } from "@/components/pawflow-provider";
 import { PhoneFrame } from "@/components/phone-frame";
 
 import "./globals.css";
@@ -33,12 +32,10 @@ export default function RootLayout({
       className={`${nunito.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="h-full overflow-hidden">
-        <PawFlowProvider>
-          <PhoneFrame>
-            {children}
-            <FeedbackPanel />
-          </PhoneFrame>
-        </PawFlowProvider>
+        <PhoneFrame>
+          {children}
+          <FeedbackPanel />
+        </PhoneFrame>
       </body>
     </html>
   );

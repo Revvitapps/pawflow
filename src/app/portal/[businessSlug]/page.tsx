@@ -1,250 +1,61 @@
-"use client";
+import { notFound } from "next/navigation";
+import { CalendarDays, MessageCircleMore, PawPrint } from "lucide-react";
 
-import { useParams } from "next/navigation";
-import { useState } from "react";
-import { Upload } from "lucide-react";
+import { getPublicBusinessBySlug } from "@/server/tenant";
 
-import { LogoBadge } from "@/components/logo-badge";
-import { usePawFlow } from "@/components/pawflow-provider";
-import { PortalBookingForm } from "@/components/pawflow-ui";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+export default async function CustomerPortalPage({
+  params,
+}: {
+  params: Promise<{ businessSlug: string }>;
+}) {
+  const { businessSlug } = await params;
+  const business = await getPublicBusinessBySlug(businessSlug);
+  if (!business) notFound();
 
-export default function PortalPage() {
-  const params = useParams<{ businessSlug: string }>();
-  const { workspace, createIntakeRequest, createBoardingRequest, addAiLog, addMessage, addPayment, runAiTask } = usePawFlow();
-  const [loading, setLoading] = useState<"grooming" | "boarding" | null>(null);
-  const [portalMessage, setPortalMessage] = useState("");
-  const [uploadNote, setUploadNote] = useState("");
-  const [depositNote, setDepositNote] = useState("");
-  const brand = workspace.organization.brand;
-  const latestAppointment = workspace.appointments[0];
-  const latestPet = workspace.pets[0];
-  const latestCustomer = workspace.customers[0];
+  const brand = (business.brand as Record<string, string> | undefined) ?? {};
+  const primary = brand.primaryColor || "#79c6bf";
+  const secondary = brand.secondaryColor || "#dff3f0";
+  const headline = brand.portalHeadline || "Booking, intake, and updates for your pet — all in one place.";
 
   return (
     <main
-      className="h-full space-y-6 overflow-y-auto px-4 py-8"
-      style={{ background: `linear-gradient(180deg, ${brand.secondaryColor} 0%, white 50%, #fffaf7 100%)` }}
+      className="h-full overflow-y-auto px-4 py-10"
+      style={{ background: `radial-gradient(circle at top, ${secondary} 0%, #ffffff 55%)` }}
     >
-        <header className="rounded-[36px] border border-white/70 bg-white/85 p-6 shadow-[0_20px_80px_rgba(61,58,57,0.08)]">
-          <div className="flex flex-wrap items-center gap-3">
-            {brand.logoUrl ? (
-              <LogoBadge
-                src={brand.logoUrl}
-                alt={`${brand.businessName} logo`}
-                size={68}
-                rounded="rounded-[22px]"
-                className="shadow-md"
-              />
-            ) : null}
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-zinc-400">{params.businessSlug}</p>
-              <h1 className="mt-2 font-heading text-4xl font-semibold text-zinc-900 sm:text-5xl">{brand.businessName}</h1>
+      <div className="mx-auto max-w-md text-center">
+        <div
+          className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] text-white shadow-sm"
+          style={{ backgroundColor: primary }}
+        >
+          <PawPrint className="size-7" />
+        </div>
+        <h1 className="mt-5 font-heading text-3xl font-semibold text-zinc-900">{business.name}</h1>
+        <p className="mt-3 text-sm leading-6 text-zinc-600">{headline}</p>
+
+        <div className="mt-8 grid gap-3 text-left">
+          {[
+            { icon: CalendarDays, title: "Book a visit", body: "Request grooming, boarding, or daycare." },
+            { icon: MessageCircleMore, title: "Messages", body: "Get reminders and pet updates." },
+            { icon: PawPrint, title: "Pet records", body: "Keep vaccines and notes current." },
+          ].map((item) => (
+            <div key={item.title} className="rounded-2xl border border-zinc-100 bg-white p-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl p-2" style={{ backgroundColor: secondary }}>
+                  <item.icon className="size-5 text-zinc-700" />
+                </div>
+                <div>
+                  <p className="font-heading text-base font-semibold text-zinc-900">{item.title}</p>
+                  <p className="text-sm text-zinc-500">{item.body}</p>
+                </div>
+              </div>
             </div>
-          </div>
-          <p className="mt-3 max-w-3xl text-lg leading-8 text-zinc-600">{brand.portalHeadline}</p>
-          <div className="mt-5 flex flex-wrap gap-3 text-sm text-zinc-600">
-            {workspace.organization.contactPhone ? (
-              <a
-                href={`tel:${workspace.organization.contactPhone}`}
-                className="max-w-full break-all rounded-full bg-white px-4 py-2 shadow-sm"
-              >
-                {workspace.organization.contactPhone}
-              </a>
-            ) : null}
-            {workspace.organization.contactEmail ? (
-              <a
-                href={`mailto:${workspace.organization.contactEmail}`}
-                className="max-w-full break-all rounded-full bg-white px-4 py-2 shadow-sm"
-              >
-                {workspace.organization.contactEmail}
-              </a>
-            ) : null}
-            {workspace.organization.websiteUrl ? (
-              <a
-                href={workspace.organization.websiteUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="max-w-full break-all rounded-full bg-white px-4 py-2 shadow-sm"
-              >
-                {workspace.organization.websiteUrl}
-              </a>
-            ) : null}
-          </div>
-        </header>
-
-        <div className="grid gap-6">
-          <Card className="rounded-[32px] border-white/80 bg-white/90">
-            <CardHeader>
-              <CardTitle className="font-heading text-2xl">Book an appointment</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <PortalBookingForm
-                type="grooming"
-                loading={loading === "grooming"}
-                onSubmit={async (payload) => {
-                  setLoading("grooming");
-                  const summary = await runAiTask("summarizeIntakeRequest", payload);
-                  addAiLog("summarizeIntakeRequest", payload.petName, summary);
-                  createIntakeRequest(payload, summary);
-                  setLoading(null);
-                }}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-[32px] border-white/80 bg-white/90">
-            <CardHeader>
-              <CardTitle className="font-heading text-2xl">Request a boarding stay</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <PortalBookingForm
-                type="boarding"
-                loading={loading === "boarding"}
-                onSubmit={async (payload) => {
-                  setLoading("boarding");
-                  const summary = await runAiTask("summarizeIntakeRequest", payload);
-                  addAiLog("summarizeIntakeRequest", payload.petName, summary);
-                  createBoardingRequest(payload, summary);
-                  setLoading(null);
-                }}
-              />
-            </CardContent>
-          </Card>
+          ))}
         </div>
 
-        <div className="grid gap-6">
-          <Card className="rounded-[32px] border-white/80 bg-white/90">
-            <CardHeader>
-              <CardTitle className="font-heading text-2xl">Your pets and upcoming visits</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3">
-              {workspace.pets.slice(0, 4).map((pet) => (
-                <div key={pet.id} className="rounded-[24px] bg-zinc-50 p-4">
-                  <p className="font-medium text-zinc-900">{pet.name} · {pet.breed}</p>
-                  <p className="text-sm text-zinc-500">{pet.sameAsLastTime || pet.cutPreferences}</p>
-                </div>
-              ))}
-              {workspace.appointments.slice(0, 3).map((appointment) => {
-                const pet = workspace.pets.find((item) => item.id === appointment.petId);
-                return (
-                  <div key={appointment.id} className="rounded-[24px] bg-[#eef7f5] p-4 text-sm text-zinc-700">
-                    Upcoming: {pet?.name} on {appointment.date} at {appointment.startTime}
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-[32px] border-white/80 bg-white/90">
-            <CardHeader>
-              <CardTitle className="font-heading text-2xl">Visit details and contact</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {workspace.organization.address ? (
-                <div className="rounded-[24px] bg-zinc-50 p-4 text-sm text-zinc-700">
-                  <p className="font-semibold text-zinc-900">Address</p>
-                  <p className="mt-1">{workspace.organization.address}</p>
-                </div>
-              ) : null}
-              <div className="rounded-[24px] bg-zinc-50 p-4 text-sm text-zinc-700">
-                <p className="font-semibold text-zinc-900">Hours</p>
-                <div className="mt-2 space-y-1">
-                  {workspace.organization.hours.map((line) => (
-                    <p key={line}>{line}</p>
-                  ))}
-                </div>
-              </div>
-              <label className="flex cursor-pointer items-center gap-3 rounded-[24px] border border-dashed border-zinc-200 bg-zinc-50 px-4 py-4 text-sm text-zinc-700">
-                <Upload className="size-4 text-zinc-500" />
-                <span className="flex-1">Upload vaccine record</span>
-                <Input
-                  type="file"
-                  className="hidden"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (!file) return;
-                    setUploadNote(`${file.name} uploaded for review.`);
-                    addMessage({
-                      organizationId: workspace.organization.id,
-                      customerId: latestCustomer?.id,
-                      petId: latestPet?.id,
-                      channel: "portal",
-                      direction: "inbound",
-                      subject: "Vaccine upload",
-                      body: `Customer uploaded vaccine file: ${file.name}`,
-                      sender: "Pet Parent",
-                    });
-                    event.currentTarget.value = "";
-                  }}
-                />
-              </label>
-              {uploadNote ? <p className="text-sm text-emerald-700">{uploadNote}</p> : null}
-              <Textarea
-                placeholder="Message the business"
-                value={portalMessage}
-                onChange={(event) => setPortalMessage(event.target.value)}
-              />
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  className="rounded-full"
-                  onClick={() => {
-                    addMessage({
-                      organizationId: workspace.organization.id,
-                      customerId: latestCustomer?.id,
-                      petId: latestPet?.id,
-                      channel: "portal",
-                      direction: "inbound",
-                      subject: "Portal message",
-                      body: portalMessage || "Portal message submitted.",
-                      sender: "Pet Parent",
-                    });
-                    setPortalMessage("");
-                  }}
-                >
-                  Send portal message
-                </Button>
-                <Button
-                  variant="outline"
-                  className="rounded-full"
-                  onClick={() => {
-                    addPayment({
-                      organizationId: workspace.organization.id,
-                      customerId: latestCustomer?.id || workspace.customers[0]?.id || "",
-                      appointmentId: latestAppointment?.id,
-                      amount: latestAppointment?.deposit || 25,
-                      depositAmount: latestAppointment?.deposit || 25,
-                      status: "paid",
-                      method: "stripe",
-                      dueDate: new Date().toISOString().slice(0, 10),
-                      label: `Portal deposit for ${latestPet?.name || "upcoming visit"}`,
-                    });
-                    addMessage({
-                      organizationId: workspace.organization.id,
-                      customerId: latestCustomer?.id,
-                      petId: latestPet?.id,
-                      channel: "portal",
-                      direction: "outbound",
-                      subject: "Deposit received",
-                      body: `Deposit received for ${latestPet?.name || "your pet"}. Your visit is now marked as confirmed in the demo.`,
-                      sender: brand.businessName,
-                    });
-                    setDepositNote("Deposit captured in the demo payment ledger.");
-                  }}
-                >
-                  Pay deposit
-                </Button>
-              </div>
-              {depositNote ? <p className="text-sm text-emerald-700">{depositNote}</p> : null}
-              <div className="rounded-[24px] bg-zinc-50 p-4 text-sm text-zinc-600">
-                Status updates arrive here for check-in, in-progress care, ready-for-pickup, and boarding photo notes.
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <p className="mt-8 rounded-full border border-zinc-200 bg-white px-4 py-2 text-xs font-medium text-zinc-500">
+          Online booking is being set up for {business.name}. Please call or text for now.
+        </p>
+      </div>
     </main>
   );
 }

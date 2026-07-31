@@ -1,193 +1,109 @@
-"use client";
-
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
-import { usePawFlow } from "@/components/pawflow-provider";
-import { CustomerCard, MessageThread, PetProfileCard } from "@/components/pawflow-ui";
-import { Button } from "@/components/ui/button";
+import { db } from "@/server/db";
+import { requireSession } from "@/lib/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { updateClientAction } from "../../actions";
 
-export default function CustomerDetailPage() {
-  const params = useParams<{ customerId: string }>();
-  const { workspace, updateCustomer } = usePawFlow();
+function money(cents: number) {
+  return `$${(cents / 100).toFixed(2)}`;
+}
 
-  const customer = workspace.customers.find((item) => item.id === params.customerId);
-  const pets = workspace.pets.filter((pet) => pet.customerId === customer?.id);
-  const appointments = workspace.appointments.filter((appointment) => appointment.customerId === customer?.id);
-  const messages = workspace.messages.filter((message) => message.customerId === customer?.id);
-  const payments = workspace.payments.filter((payment) => payment.customerId === customer?.id);
-
-  if (!customer) {
-    return (
-      <Card className="rounded-[32px] border-white/80 bg-white/90">
-        <CardContent className="p-6">
-          <p className="text-sm text-zinc-600">Customer record not found in the demo workspace.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+export default async function CustomerDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ customerId: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const session = await requireSession();
+  const { customerId } = await params;
+  const { error } = await searchParams;
+  const client = await db.getClient(session.user.businessId, customerId);
+  if (!client) notFound();
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm uppercase tracking-[0.24em] text-zinc-400">Customer detail</p>
-          <h2 className="font-heading text-3xl font-semibold text-zinc-900">{customer.name}</h2>
-        </div>
-        <Link href="/customers">
-          <Button variant="outline" className="rounded-full">Back to customers</Button>
-        </Link>
-      </div>
+    <div className="space-y-4">
+      <Link href="/customers" className="inline-flex items-center gap-1 text-sm text-zinc-500">
+        <ArrowLeft className="size-4" /> All clients
+      </Link>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-[24px] bg-white/90 p-4">
-          <p className="text-sm text-zinc-500">Pets</p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-900">{pets.length}</p>
-        </div>
-        <div className="rounded-[24px] bg-white/90 p-4">
-          <p className="text-sm text-zinc-500">Appointments</p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-900">{appointments.length}</p>
-        </div>
-        <div className="rounded-[24px] bg-white/90 p-4">
-          <p className="text-sm text-zinc-500">Balance</p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-900">${(customer.balanceCents / 100).toFixed(2)}</p>
-        </div>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <Card className="rounded-[32px] border-white/80 bg-white/90">
-          <CardHeader>
-            <CardTitle className="font-heading text-2xl">Editable profile</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form
-              className="space-y-4"
-              onSubmit={(event) => {
-                event.preventDefault();
-                const formData = new FormData(event.currentTarget);
-                updateCustomer(customer.id, {
-                  name: String(formData.get("name") || ""),
-                  phone: String(formData.get("phone") || ""),
-                  email: String(formData.get("email") || ""),
-                  preferredChannel: String(formData.get("preferredChannel") || "sms") as typeof customer.preferredChannel,
-                  tags: String(formData.get("tags") || "")
-                    .split(",")
-                    .map((item) => item.trim())
-                    .filter(Boolean),
-                  notes: String(formData.get("notes") || "")
-                    .split("\n")
-                    .map((item) => item.trim())
-                    .filter(Boolean),
-                  balanceCents: Math.round(Number(formData.get("balance") || 0) * 100),
-                  lastVisitAt: String(formData.get("lastVisitAt") || ""),
-                });
-              }}
-            >
-              <Input name="name" defaultValue={customer.name} placeholder="Customer name" />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input name="phone" defaultValue={customer.phone} placeholder="Phone" />
-                <Input name="email" defaultValue={customer.email} placeholder="Email" />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <select
-                  name="preferredChannel"
-                  defaultValue={customer.preferredChannel}
-                  className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm"
-                >
-                  <option value="sms">sms</option>
-                  <option value="email">email</option>
-                  <option value="portal">portal</option>
-                  <option value="ai-call">ai-call</option>
-                </select>
-                <Input
-                  name="balance"
-                  type="number"
-                  step="0.01"
-                  defaultValue={(customer.balanceCents / 100).toFixed(2)}
-                  placeholder="Balance"
-                />
-              </div>
-              <Input name="lastVisitAt" defaultValue={customer.lastVisitAt || ""} placeholder="Last visit date" />
-              <Input name="tags" defaultValue={customer.tags.join(", ")} placeholder="Tags, comma separated" />
-              <Textarea name="notes" defaultValue={customer.notes.join("\n")} placeholder="Internal notes, one per line" />
-              <Button className="rounded-full">Save customer details</Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-4">
-          <CustomerCard customer={customer} petCount={pets.length} />
-          <Card className="rounded-[32px] border-white/80 bg-white/90">
-            <CardHeader>
-              <CardTitle className="font-heading text-2xl">Milestones</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3">
-              <div className="rounded-[24px] bg-zinc-50 p-4 text-sm text-zinc-700">Lead created and added to CRM</div>
-              <div className="rounded-[24px] bg-zinc-50 p-4 text-sm text-zinc-700">
-                {appointments.length ? `${appointments.length} booking milestone(s) tracked` : "No bookings yet"}
-              </div>
-              <div className="rounded-[24px] bg-zinc-50 p-4 text-sm text-zinc-700">
-                {messages.length ? `${messages.length} message thread event(s)` : "No messaging events yet"}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      <Card className="rounded-[32px] border-white/80 bg-white/90">
+      <Card>
         <CardHeader>
-          <CardTitle className="font-heading text-2xl">Related pets</CardTitle>
+          <CardTitle>{client.name}</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4">
-          {pets.map((pet) => (
-            <Link key={pet.id} href={`/pets/${pet.id}`} className="block">
-              <PetProfileCard pet={pet} owner={customer} />
-            </Link>
-          ))}
+        <CardContent>
+          {error ? (
+            <p className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
+          ) : null}
+          <form action={updateClientAction} className="space-y-3">
+            <input type="hidden" name="id" value={client.id} />
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-zinc-500">Name</label>
+              <Input name="name" defaultValue={client.name} required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-500">Phone</label>
+                <Input name="phone" defaultValue={client.phone} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-500">Email</label>
+                <Input name="email" defaultValue={client.email} />
+              </div>
+            </div>
+            <Button type="submit" size="sm" className="rounded-full bg-[#79c6bf] text-zinc-900 hover:bg-[#68b7af]">
+              Save changes
+            </Button>
+          </form>
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card className="rounded-[32px] border-white/80 bg-white/90">
-          <CardHeader>
-            <CardTitle className="font-heading text-2xl">Appointments</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            {appointments.map((appointment) => (
-              <Link key={appointment.id} href={`/appointments/${appointment.id}`} className="rounded-[24px] bg-zinc-50 p-4 text-sm text-zinc-700">
-                {appointment.date} at {appointment.startTime} · {workspace.pets.find((pet) => pet.id === appointment.petId)?.name}
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-[32px] border-white/80 bg-white/90">
-          <CardHeader>
-            <CardTitle className="font-heading text-2xl">Payments</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            {payments.map((payment) => (
-              <Link key={payment.id} href={`/payments/${payment.id}`} className="rounded-[24px] bg-zinc-50 p-4 text-sm text-zinc-700">
-                {payment.label} · ${payment.amount} · {payment.status}
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="rounded-[32px] border-white/80 bg-white/90">
+      <Card>
         <CardHeader>
-          <CardTitle className="font-heading text-2xl">Message history</CardTitle>
+          <CardTitle>Pets ({client.pets.length})</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4">
-          {messages.map((message) => (
-            <Link key={message.id} href={`/messages/${message.id}`} className="block">
-              <MessageThread message={message} />
-            </Link>
-          ))}
+        <CardContent className="space-y-2">
+          {client.pets.length === 0 ? (
+            <p className="text-sm text-zinc-500">No pets on file.</p>
+          ) : (
+            client.pets.map((pet) => (
+              <Link
+                key={pet.id}
+                href={`/pets/${pet.id}`}
+                className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white px-3 py-2"
+              >
+                <span className="text-sm font-medium text-zinc-900">{pet.name}</span>
+                <span className="text-xs text-zinc-500">{pet.breed || "—"}</span>
+              </Link>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Invoices</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {client.invoices.length === 0 ? (
+            <p className="text-sm text-zinc-500">No invoices.</p>
+          ) : (
+            client.invoices.map((inv) => (
+              <div key={inv.id} className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white px-3 py-2">
+                <span className="text-sm text-zinc-700">{inv.label}</span>
+                <span className="flex items-center gap-2 text-sm">
+                  {money(inv.amountCents)}
+                  <Badge variant="secondary">{inv.status}</Badge>
+                </span>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
     </div>

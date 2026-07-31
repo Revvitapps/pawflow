@@ -16,11 +16,42 @@ import { prisma } from "@/lib/prisma";
 import type {
   AppointmentStatus,
   ReservationStatus,
+  ReservationKind,
+  ServiceCategory,
   InvoiceStatus,
   NotificationStatus,
+  NotificationType,
+  NotificationChannel,
 } from "@prisma/client";
 
 export const db = {
+  // ----- Business (tenant record) -----
+  getBusiness(businessId: string) {
+    return prisma.business.findUnique({ where: { id: businessId } });
+  },
+
+  async updateBusiness(
+    businessId: string,
+    patch: Partial<{ name: string; timezone: string; boardingCapacity: number; brand: Record<string, unknown> }>
+  ) {
+    const existing = await prisma.business.findUnique({ where: { id: businessId } });
+    if (!existing) throw new Error("Business not found");
+    // Brand is a JSON blob — merge so partial brand updates never drop fields.
+    const nextBrand =
+      patch.brand !== undefined
+        ? { ...(existing.brand as Record<string, unknown>), ...patch.brand }
+        : undefined;
+    return prisma.business.update({
+      where: { id: businessId },
+      data: {
+        ...(patch.name !== undefined ? { name: patch.name } : {}),
+        ...(patch.timezone !== undefined ? { timezone: patch.timezone } : {}),
+        ...(patch.boardingCapacity !== undefined ? { boardingCapacity: patch.boardingCapacity } : {}),
+        ...(nextBrand !== undefined ? { brand: nextBrand as object } : {}),
+      },
+    });
+  },
+
   // ----- Clients (pet owners) -----
   listClients(businessId: string) {
     return prisma.client.findMany({
@@ -66,13 +97,53 @@ export const db = {
   getPet(businessId: string, id: string) {
     return prisma.pet.findFirst({
       where: { id, businessId },
-      include: { vaccineRecords: true, client: true, appointments: true },
+      include: {
+        vaccineRecords: true,
+        client: true,
+        appointments: { orderBy: [{ date: "desc" }], include: { service: true } },
+      },
     });
+  },
+
+  async createPet(
+    businessId: string,
+    data: {
+      clientId: string;
+      name: string;
+      breed?: string;
+      age?: string;
+      weight?: string;
+      allergies?: string[];
+      cutPreferences?: string;
+      boardingNotes?: string;
+    }
+  ) {
+    // The owning client must belong to this tenant.
+    const client = await prisma.client.findFirst({ where: { id: data.clientId, businessId } });
+    if (!client) throw new Error("Client not found for this business");
+    return prisma.pet.create({ data: { ...data, businessId } });
+  },
+
+  async updatePet(
+    businessId: string,
+    id: string,
+    patch: Partial<{ name: string; breed: string; age: string; weight: string; allergies: string[]; cutPreferences: string; boardingNotes: string }>
+  ) {
+    const existing = await prisma.pet.findFirst({ where: { id, businessId } });
+    if (!existing) throw new Error("Pet not found");
+    return prisma.pet.update({ where: { id: existing.id }, data: patch });
   },
 
   // ----- Services -----
   listServices(businessId: string) {
     return prisma.service.findMany({ where: { businessId }, orderBy: { name: "asc" } });
+  },
+
+  createService(
+    businessId: string,
+    data: { name: string; category: ServiceCategory; durationMinutes: number; priceCents: number; depositRequired?: boolean; depositCents?: number; description?: string }
+  ) {
+    return prisma.service.create({ data: { ...data, businessId } });
   },
 
   async updateService(
@@ -148,6 +219,32 @@ export const db = {
     });
   },
 
+  getReservation(businessId: string, id: string) {
+    return prisma.reservation.findFirst({
+      where: { id, businessId },
+      include: { client: true, pet: true, kennel: true },
+    });
+  },
+
+  async createReservation(
+    businessId: string,
+    data: {
+      clientId: string;
+      petId: string;
+      kind: ReservationKind;
+      startDate: Date;
+      endDate: Date;
+      feedingNotes?: string;
+      medicationNotes?: string;
+    }
+  ) {
+    // Referenced client/pet must belong to this tenant.
+    const client = await prisma.client.findFirst({ where: { id: data.clientId, businessId } });
+    const pet = await prisma.pet.findFirst({ where: { id: data.petId, businessId } });
+    if (!client || !pet) throw new Error("Client or pet not found for this business");
+    return prisma.reservation.create({ data: { ...data, businessId } });
+  },
+
   /**
    * Assign a kennel to a reservation, refusing to exceed the kennel's capacity
    * for any overlapping date range (server-enforced no double-booking).
@@ -193,15 +290,65 @@ export const db = {
     });
   },
 
+  getInvoice(businessId: string, id: string) {
+    return prisma.invoice.findFirst({ where: { id, businessId }, include: { client: true } });
+  },
+
   async setInvoiceStatus(businessId: string, id: string, status: InvoiceStatus) {
     const invoice = await prisma.invoice.findFirst({ where: { id, businessId } });
     if (!invoice) throw new Error("Invoice not found");
     return prisma.invoice.update({ where: { id: invoice.id }, data: { status } });
   },
 
+  async createInvoice(
+    businessId: string,
+    data: { clientId: string; label: string; amountCents: number; depositCents?: number; dueDate: Date }
+  ) {
+    const client = await prisma.client.findFirst({ where: { id: data.clientId, businessId } });
+    if (!client) throw new Error("Client not found for this business");
+    return prisma.invoice.create({ data: { ...data, businessId } });
+  },
+
   // ----- Notifications -----
   listNotifications(businessId: string) {
-    return prisma.notification.findMany({ where: { businessId }, orderBy: { createdAt: "desc" } });
+    return prisma.notification.findMany({
+      where: { businessId },
+      orderBy: { createdAt: "desc" },
+      include: { client: true },
+    });
+  },
+
+  getNotification(businessId: string, id: string) {
+    return prisma.notification.findFirst({ where: { id, businessId }, include: { client: true } });
+  },
+
+  async createNotification(
+    businessId: string,
+    data: {
+      clientId?: string;
+      type: NotificationType;
+      channel?: NotificationChannel;
+      subject?: string;
+      body: string;
+      status?: NotificationStatus;
+    }
+  ) {
+    if (data.clientId) {
+      const client = await prisma.client.findFirst({ where: { id: data.clientId, businessId } });
+      if (!client) throw new Error("Client not found for this business");
+    }
+    return prisma.notification.create({
+      data: {
+        businessId,
+        clientId: data.clientId,
+        type: data.type,
+        channel: data.channel ?? "sms",
+        subject: data.subject ?? "",
+        body: data.body,
+        status: data.status ?? "sent",
+        sentAt: (data.status ?? "sent") === "sent" ? new Date() : null,
+      },
+    });
   },
 
   async setNotificationStatus(businessId: string, id: string, status: NotificationStatus) {

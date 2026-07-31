@@ -101,3 +101,13 @@ export function getUserByEmail(email: string) {
 export function getBusinessById(businessId: string) {
   return prisma.business.findUnique({ where: { id: businessId } });
 }
+
+/** Public lookup for the customer portal (pre-auth, by slug). Returns only the
+ *  fields safe to render publicly. */
+export async function getPublicBusinessBySlug(slug: string) {
+  const business = await prisma.business.findUnique({
+    where: { slug },
+    select: { id: true, name: true, slug: true, brand: true },
+  });
+  return business;
+}

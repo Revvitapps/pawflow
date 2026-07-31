@@ -1,114 +1,78 @@
-"use client";
-
 import Link from "next/link";
-import { useState } from "react";
 
-import { usePawFlow } from "@/components/pawflow-provider";
-import { MessageThread } from "@/components/pawflow-ui";
-import { Button } from "@/components/ui/button";
+import { db } from "@/server/db";
+import { requireSession } from "@/lib/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { sendMessageAction } from "../actions";
 
-const templates = [
-  "Ready to Wag: {pet} is looking fresh and ready for pickup.",
-  "Missed Call Rescue: Sorry we missed you. Send your pet's name and what you need help with.",
-  "Vaccine Watch: Please upload updated records before boarding or daycare.",
-];
-
-export default function MessagesPage() {
-  const { workspace, addMessage, addAiLog, runAiTask } = usePawFlow();
-  const [replyDraft, setReplyDraft] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState(templates[0]);
-
-  const latestInbound = workspace.messages.find((message) => message.direction === "inbound");
+export default async function MessagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const session = await requireSession();
+  const { error } = await searchParams;
+  const [notifications, clients] = await Promise.all([
+    db.listNotifications(session.user.businessId),
+    db.listClients(session.user.businessId),
+  ]);
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
-      <div className="space-y-4">
-        {workspace.messages.map((message) => (
-          <div key={message.id} className="space-y-2">
-            <MessageThread message={message} />
-            <Link href={`/messages/${message.id}`}>
-              <Button variant="outline" className="w-full rounded-full">Open message detail</Button>
-            </Link>
-          </div>
-        ))}
-      </div>
-      <div className="space-y-4">
-        <Card className="rounded-[32px] border-white/80 bg-white/90">
-          <CardHeader>
-            <CardTitle className="font-heading text-2xl">AI suggested reply</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-zinc-600">Generate a reply from the latest customer message, then send it as a mock SMS or email.</p>
-            <Button
-              className="rounded-full"
-              onClick={async () => {
-                if (!latestInbound) return;
-                const output = await runAiTask("generateCustomerReply", {
-                  customerName: latestInbound.sender,
-                  question: latestInbound.body,
-                });
-                addAiLog("generateCustomerReply", latestInbound.body, output);
-                setReplyDraft(output);
-              }}
-            >
-              Generate reply
-            </Button>
-            <Textarea value={replyDraft} onChange={(e) => setReplyDraft(e.target.value)} placeholder="AI suggested reply appears here..." />
-            <Button
-              variant="outline"
-              className="rounded-full"
-              onClick={() =>
-                addMessage({
-                  organizationId: workspace.organization.id,
-                  customerId: latestInbound?.customerId,
-                  petId: latestInbound?.petId,
-                  channel: latestInbound?.channel || "sms",
-                  direction: "outbound",
-                  subject: "Reply from PawFlow",
-                  body: replyDraft,
-                  sender: "Front Desk",
-                  aiSuggested: true,
-                })
-              }
-            >
-              Mock-send reply
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-[32px] border-white/80 bg-white/90">
-          <CardHeader>
-            <CardTitle className="font-heading text-2xl">Message templates</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <select className="w-full rounded-2xl border border-zinc-200 px-4 py-3 text-sm" value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)}>
-              {templates.map((template) => (
-                <option key={template} value={template}>{template}</option>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Send a message</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {error ? (
+            <p className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
+          ) : null}
+          <form action={sendMessageAction} className="space-y-3">
+            <select name="clientId" defaultValue="" className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-2 text-sm text-zinc-700">
+              <option value="">No specific client</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
-            <Textarea value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} />
-            <Input placeholder="Subject" defaultValue="Customer update" />
-            <Button
-              className="rounded-full"
-              onClick={() =>
-                addMessage({
-                  organizationId: workspace.organization.id,
-                  channel: "sms",
-                  direction: "outbound",
-                  subject: "Template send",
-                  body: selectedTemplate,
-                  sender: "PawFlow Templates",
-                })
-              }
-            >
-              Mock-send template
+            <Input name="subject" placeholder="Subject (optional)" />
+            <Textarea name="body" placeholder="Message" required rows={3} />
+            <Button type="submit" size="sm" className="rounded-full bg-[#79c6bf] text-zinc-900 hover:bg-[#68b7af]">
+              Send
             </Button>
-          </CardContent>
-        </Card>
-      </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Message log ({notifications.length})</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {notifications.length === 0 ? (
+            <p className="text-sm text-zinc-500">No messages yet.</p>
+          ) : (
+            notifications.map((n) => (
+              <Link
+                key={n.id}
+                href={`/messages/${n.id}`}
+                className="block rounded-xl border border-zinc-100 bg-white px-3 py-2"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-medium text-zinc-900">
+                    {n.client?.name ?? "Broadcast"}{n.subject ? ` · ${n.subject}` : ""}
+                  </span>
+                  <Badge variant="secondary">{n.status}</Badge>
+                </div>
+                <p className="mt-1 truncate text-xs text-zinc-500">{n.body}</p>
+              </Link>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
