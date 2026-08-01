@@ -12,6 +12,17 @@
         "package.json": "ba69abda44c7a3fbac4ab23e35738603ad9a1fc151c09e19128de22c9f1d6465",
         "prisma/schema.template.prisma": "285da851634be7ccb2aaafa667d2c52d537096fd2139ea2a461d20cf26dbc683"
       }
+    },
+    {
+      "name": "@revvitapps/revsign",
+      "version": "0.1.0",
+      "sourceCommit": "28bd24d313f0551e6ce4d31d18141849233164de",
+      "files": {
+        "dist/index.d.ts": "5e5f7ef8871c1dfdaaa0b5f488793b8a9b94a5534cb50f40b4e6e785be77c541",
+        "dist/index.js": "630aee23c5a783539d1ae3ad528543a0e5ae252d22421db6008e48b41b62e0dc",
+        "package.json": "17e1fa0ddcff737cac4dde86ef9c7ef2731ce371af9042bedc4db79a6cb718a6",
+        "prisma/schema.template.prisma": "91cd7136742ff5b6c3b23029e715810c787f059b67540853422e141f25630c9d"
+      }
     }
   ]
 }

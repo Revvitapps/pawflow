@@ -8,8 +8,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
@@ -114,30 +114,31 @@ enum VaccineStatus {
 // ---------------------------------------------------------------------------
 
 model Business {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  timezone  String   @default("America/New_York")
+  id               String   @id @default(cuid())
+  name             String
+  slug             String   @unique
+  timezone         String   @default("America/New_York")
   // Brand + policy settings kept as a JSON blob so the existing brand screens
   // can round-trip without a column-per-field migration in this pass.
-  brand     Json     @default("{}")
-  boardingCapacity Int @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  brand            Json     @default("{}")
+  boardingCapacity Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  users         User[]
-  memberships   Membership[]
-  staff         Staff[]
-  services      Service[]
-  clients       Client[]
-  pets          Pet[]
-  vaccineRecords VaccineRecord[]
-  kennels       Kennel[]
-  appointments  Appointment[]
-  reservations  Reservation[]
-  invoices      Invoice[]
-  notifications Notification[]
-  auditEvents   AuditEvent[]
+  users             User[]
+  memberships       Membership[]
+  staff             Staff[]
+  services          Service[]
+  clients           Client[]
+  pets              Pet[]
+  vaccineRecords    VaccineRecord[]
+  kennels           Kennel[]
+  appointments      Appointment[]
+  reservations      Reservation[]
+  invoices          Invoice[]
+  notifications     Notification[]
+  auditEvents       AuditEvent[]
+  signatureRequests SignatureRequest[]
 }
 
 // Auth identity. `businessId` is the user's active/home tenant used to scope the
@@ -159,9 +160,10 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  memberships  Membership[]
-  resetTokens  PasswordResetToken[]
-  mfa          UserMfa?
+  memberships              Membership[]
+  resetTokens              PasswordResetToken[]
+  mfa                      UserMfa?
+  createdSignatureRequests SignatureRequest[]   @relation("SignatureCreatedBy")
 
   @@index([businessId])
 }
@@ -203,13 +205,13 @@ model UserMfa {
 // (usedAt) and short-lived (expiresAt); issuing a new one rotates out prior
 // unused tokens for the same user.
 model PasswordResetToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String   @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
   @@index([expiresAt])
@@ -234,19 +236,19 @@ model Membership {
 // ---------------------------------------------------------------------------
 
 model Staff {
-  id              String   @id @default(cuid())
-  businessId      String
-  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  userId          String?
-  name            String
-  roleLabel       String
-  specialty       String   @default("")
-  phone           String   @default("")
-  color           String   @default("#79c6bf")
-  avatar          String   @default("")
-  isAvailableToday Boolean @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(cuid())
+  businessId       String
+  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId           String?
+  name             String
+  roleLabel        String
+  specialty        String   @default("")
+  phone            String   @default("")
+  color            String   @default("#79c6bf")
+  avatar           String   @default("")
+  isAvailableToday Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   appointments Appointment[]
 
@@ -274,19 +276,19 @@ model Service {
 
 // Pet owner.
 model Client {
-  id               String   @id @default(cuid())
+  id               String              @id @default(cuid())
   businessId       String
-  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business         Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
   name             String
-  phone            String   @default("")
-  email            String   @default("")
+  phone            String              @default("")
+  email            String              @default("")
   preferredChannel NotificationChannel @default(sms)
-  tags             String[] @default([])
-  notes            String[] @default([])
-  balanceCents     Int      @default(0)
+  tags             String[]            @default([])
+  notes            String[]            @default([])
+  balanceCents     Int                 @default(0)
   lastVisitAt      DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
   pets          Pet[]
   appointments  Appointment[]
@@ -359,28 +361,28 @@ model Kennel {
 }
 
 model Appointment {
-  id             String            @id @default(cuid())
-  businessId     String
-  business       Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  clientId       String
-  client         Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  petId          String
-  pet            Pet               @relation(fields: [petId], references: [id], onDelete: Cascade)
-  staffId        String?
-  staff          Staff?            @relation(fields: [staffId], references: [id], onDelete: SetNull)
-  serviceId      String?
-  service        Service?          @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  date           DateTime
-  startTime      String
-  endTime        String
-  priceCents     Int               @default(0)
-  depositCents   Int               @default(0)
-  status         AppointmentStatus @default(requested)
-  notes          String            @default("")
-  noShowRisk     String            @default("low")
-  reminderEnabled Boolean          @default(true)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id              String            @id @default(cuid())
+  businessId      String
+  business        Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  clientId        String
+  client          Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  petId           String
+  pet             Pet               @relation(fields: [petId], references: [id], onDelete: Cascade)
+  staffId         String?
+  staff           Staff?            @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  serviceId       String?
+  service         Service?          @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  date            DateTime
+  startTime       String
+  endTime         String
+  priceCents      Int               @default(0)
+  depositCents    Int               @default(0)
+  status          AppointmentStatus @default(requested)
+  notes           String            @default("")
+  noShowRisk      String            @default("low")
+  reminderEnabled Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   invoices Invoice[]
 
@@ -391,25 +393,25 @@ model Appointment {
 // Boarding / daycare stay. Occupies a Kennel over a date range; the guarded
 // data layer enforces no double-booking of a kennel beyond its capacity.
 model Reservation {
-  id             String            @id @default(cuid())
-  businessId     String
-  business       Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  clientId       String
-  client         Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  petId          String
-  pet            Pet               @relation(fields: [petId], references: [id], onDelete: Cascade)
-  kennelId       String?
-  kennel         Kennel?           @relation(fields: [kennelId], references: [id], onDelete: SetNull)
-  kind           ReservationKind   @default(boarding)
-  startDate      DateTime
-  endDate        DateTime
-  status         ReservationStatus @default(requested)
-  feedingNotes   String            @default("")
-  medicationNotes String           @default("")
-  vaccineOk      Boolean           @default(false)
-  photoUpdates   String[]          @default([])
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id              String            @id @default(cuid())
+  businessId      String
+  business        Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  clientId        String
+  client          Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  petId           String
+  pet             Pet               @relation(fields: [petId], references: [id], onDelete: Cascade)
+  kennelId        String?
+  kennel          Kennel?           @relation(fields: [kennelId], references: [id], onDelete: SetNull)
+  kind            ReservationKind   @default(boarding)
+  startDate       DateTime
+  endDate         DateTime
+  status          ReservationStatus @default(requested)
+  feedingNotes    String            @default("")
+  medicationNotes String            @default("")
+  vaccineOk       Boolean           @default(false)
+  photoUpdates    String[]          @default([])
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   invoices Invoice[]
 
@@ -442,21 +444,21 @@ model Invoice {
 
 // Unifies outbound reminders and message log entries.
 model Notification {
-  id         String             @id @default(cuid())
-  businessId String
-  business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  clientId   String?
-  client     Client?            @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  type       NotificationType
-  channel    NotificationChannel @default(sms)
-  subject    String             @default("")
-  body       String
-  status     NotificationStatus @default(queued)
-  dueAt      DateTime?
-  sentAt     DateTime?
-  aiSuggested Boolean           @default(false)
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
+  id          String              @id @default(cuid())
+  businessId  String
+  business    Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  clientId    String?
+  client      Client?             @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  type        NotificationType
+  channel     NotificationChannel @default(sms)
+  subject     String              @default("")
+  body        String
+  status      NotificationStatus  @default(queued)
+  dueAt       DateTime?
+  sentAt      DateTime?
+  aiSuggested Boolean             @default(false)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 
   @@index([businessId])
 }
@@ -497,4 +499,91 @@ model LoginAttempt {
   createdAt  DateTime @default(now())
 
   @@index([identifier, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// E-signature (RevSign — @revvitapps/revsign)
+// ---------------------------------------------------------------------------
+// Adopted from the shared, headless RevSign package. Column names match the
+// package's schema template so the structurally-typed Prisma reference adapter
+// (createPrismaSignatureStore) works unchanged. `tenantId` is Pawflow's
+// businessId (the tenant-isolation key every scoped query filters on);
+// `linkedRef` is an opaque back-reference to the host object being signed — a
+// Client / Pet / Reservation id for intake, boarding-consent, and
+// vaccine-authorization forms. RevSign never interprets it.
+model SignatureRequest {
+  id       String   @id @default(cuid())
+  tenantId String
+  tenant   Business @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  title     String
+  message   String?
+  status    String  @default("SENT")
+  linkedRef String? // opaque host object reference (client / pet / reservation id)
+
+  originalFilename String
+  originalPath     String
+  signedPath       String?
+  documentHash     String?
+
+  createdById String?
+  createdBy   User?   @relation("SignatureCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  sentAt      DateTime?
+  completedAt DateTime?
+  voidedAt    DateTime?
+  voidReason  String?
+
+  signers Signer[]
+  events  SignatureEvent[]
+
+  @@index([tenantId])
+  @@index([linkedRef])
+}
+
+model Signer {
+  id        String           @id @default(cuid())
+  requestId String
+  request   SignatureRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  order     Int              @default(0)
+  status    String           @default("PENDING")
+
+  // Private signing link — `${random}.${hmac}`, verified cheaply before any DB hit.
+  signToken          String   @unique
+  signTokenExpiresAt DateTime
+  signTokenRevoked   Boolean  @default(false)
+
+  signatureType      String?
+  signatureImagePath String?
+  consentedAt        DateTime?
+  viewedAt           DateTime?
+  signedAt           DateTime?
+  declinedAt         DateTime?
+  declineReason      String?
+  signedIp           String?
+  signedUserAgent    String?
+
+  events SignatureEvent[]
+
+  @@index([requestId])
+  @@index([signToken])
+}
+
+model SignatureEvent {
+  id        String           @id @default(cuid())
+  requestId String
+  request   SignatureRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  signerId  String?
+  signer    Signer?          @relation(fields: [signerId], references: [id], onDelete: SetNull)
+  type      String
+  ip        String?
+  userAgent String?
+  metadata  String? // JSON-encoded details
+  createdAt DateTime         @default(now())
+
+  @@index([requestId])
 }

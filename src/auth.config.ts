@@ -26,6 +26,7 @@ const PROTECTED_PREFIXES = [
   "/ai-receptionist",
   "/settings",
   "/setup",
+  "/signatures",
 ];
 
 export const authConfig = {

@@ -1,0 +1,95 @@
+// RevSign schema TEMPLATE. Copy these three models into a host app's
+// schema.prisma and wire `tenantId` to the host's own tenant table (Firm,
+// Business, Org, Workspace…). RevSign never imports a generated client — the
+// Prisma reference adapter (`createPrismaSignatureStore`) is structurally typed
+// and only needs these column names.
+//
+// Notes for the host:
+//   * `tenantId` is REQUIRED and is the tenant-isolation key. Add an FK + index
+//     to your own tenant model (shown commented; uncomment and rename `Business`
+//     to your tenant model). RevSign scopes every staff query by it.
+//   * `linkedRef` is an OPTIONAL opaque back-reference to the host object this
+//     request signs (a change order id, quote id, engagement id…). RevSign never
+//     interprets it.
+//   * `createdById` is optional; wire it to your User model if you want.
+//   * Statuses are stored as strings to stay portable; the engine uses the same
+//     string values as the DocuChase enums (SENT/VIEWED/COMPLETED/DECLINED/VOIDED
+//     and PENDING/VIEWED/SIGNED/DECLINED).
+
+model SignatureRequest {
+  id       String @id @default(cuid())
+  tenantId String
+  // tenant   Business @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  title     String
+  message   String?
+  status    String  @default("SENT")
+  linkedRef String? // opaque host object reference (e.g. a change order id)
+
+  originalFilename String
+  originalPath     String
+  signedPath       String?
+  documentHash     String?
+
+  createdById String?
+  // createdBy   User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  sentAt      DateTime?
+  completedAt DateTime?
+  voidedAt    DateTime?
+  voidReason  String?
+
+  signers Signer[]
+  events  SignatureEvent[]
+
+  @@index([tenantId])
+  @@index([linkedRef])
+}
+
+model Signer {
+  id        String           @id @default(cuid())
+  requestId String
+  request   SignatureRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  order     Int              @default(0)
+  status    String           @default("PENDING")
+
+  // Private signing link — `${random}.${hmac}`, verified cheaply before any DB hit.
+  signToken          String   @unique
+  signTokenExpiresAt DateTime
+  signTokenRevoked   Boolean  @default(false)
+
+  // Captured at signing time (the legal audit fields).
+  signatureType      String?
+  signatureImagePath String?
+  consentedAt        DateTime?
+  viewedAt           DateTime?
+  signedAt           DateTime?
+  declinedAt         DateTime?
+  declineReason      String?
+  signedIp           String?
+  signedUserAgent    String?
+
+  events SignatureEvent[]
+
+  @@index([requestId])
+  @@index([signToken])
+}
+
+model SignatureEvent {
+  id        String           @id @default(cuid())
+  requestId String
+  request   SignatureRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  signerId  String?
+  signer    Signer?          @relation(fields: [signerId], references: [id], onDelete: SetNull)
+  type      String
+  ip        String?
+  userAgent String?
+  metadata  String? // JSON-encoded details
+  createdAt DateTime @default(now())
+
+  @@index([requestId])
+}

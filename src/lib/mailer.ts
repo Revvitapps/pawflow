@@ -21,3 +21,44 @@ export async function sendPasswordResetEmail(params: {
   // TODO(security): wire a real provider here (e.g. Resend). Until then, prod
   // reset emails are not delivered — tracked in SECURITY.md.
 }
+
+/**
+ * RevSign notifications. Same delivery seam as the reset email above: in dev the
+ * signing link is logged (so a request can be exercised end-to-end without a
+ * provider), in prod this is where a real Resend send must be wired. Kept
+ * non-throwing so a mail failure never blocks the signing lifecycle.
+ */
+export async function sendSignatureRequestEmail(params: {
+  to: string;
+  signerName: string;
+  issuerName: string;
+  documentTitle: string;
+  message?: string;
+  signUrl: string;
+  expiresDate: string;
+}): Promise<void> {
+  if (process.env.NODE_ENV !== "production") {
+    console.info(
+      `[mailer:dev] signature request for ${params.to} — “${params.documentTitle}”: ${params.signUrl}`,
+    );
+    return;
+  }
+  // TODO(delivery): wire Resend here to send the branded PawFlow "please sign"
+  // email. Until then, prod signing-link emails are not delivered.
+}
+
+export async function sendSignatureCompletedEmail(params: {
+  to: string;
+  documentTitle: string;
+  issuerName: string;
+  signerList: string;
+  downloadUrl: string;
+}): Promise<void> {
+  if (process.env.NODE_ENV !== "production") {
+    console.info(
+      `[mailer:dev] signature completed for ${params.to} — “${params.documentTitle}”: ${params.downloadUrl}`,
+    );
+    return;
+  }
+  // TODO(delivery): wire Resend here to send the branded "fully signed" email.
+}

@@ -2,6 +2,9 @@
 
 # dependencies
 /node_modules
+# vendored @revvitapps/* packages install their own nested deps on `npm install`
+# (via their file: dependency + package.json); never commit those.
+vendor/*/node_modules/
 /.pnp
 .pnp.*
 .yarn/*

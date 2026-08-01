@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Home, LogOut } from "lucide-react";
+import { Bell, FileSignature, Home, LogOut } from "lucide-react";
 
 import { LogoBadge } from "@/components/logo-badge";
 import { MobileNav } from "@/components/mobile-nav";
@@ -70,6 +70,12 @@ export function AppShell({
               <Button variant="outline" className="rounded-full px-3 text-xs sm:text-sm">
                 <Home className="size-4" />
                 Dashboard
+              </Button>
+            </Link>
+            <Link href="/signatures">
+              <Button variant="outline" className="rounded-full px-3 text-xs sm:text-sm">
+                <FileSignature className="size-4" />
+                Signatures
               </Button>
             </Link>
             <Link href="/messages">
